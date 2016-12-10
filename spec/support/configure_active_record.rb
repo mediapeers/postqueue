@@ -1,5 +1,4 @@
 require "active_record"
-require_relative "./models"
 
 $LOAD_PATH << File.dirname(__FILE__)
 
@@ -8,8 +7,8 @@ ActiveRecord::Base.establish_connection(adapter: "postgresql",
                                         username: "postqueue",
                                         password: "postqueue")
 
-require_relative "schema.rb"
-require_relative "models.rb"
+# require_relative "schema.rb"
+# require_relative "models.rb"
 
 Postqueue.unmigrate!
 Postqueue.migrate!
