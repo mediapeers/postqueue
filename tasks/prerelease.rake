@@ -76,7 +76,7 @@ def Sys?(cmd)
   $?.exitstatus == 0
 end
 
-namespace :release do
+namespace :prerelease do
   namespace :git do
     task :is_on_master do
       current_branch = `git branch 2> /dev/null`.split("\n").select { |line| line =~ /\A\* / }.first
@@ -111,8 +111,8 @@ namespace :release do
     sh("git tag -a v#{version} -m \"Tag\"")
   end
 
-  desc 'Prerelease tasks: increment version number and commit'
-  task prerelease: %w(prerequisites bump_version commit)
+  task all: %w(prerequisites bump_version commit)
 end
 
-task build: "release:prerelease"
+desc 'Prerelease tasks: increment version number and commit'
+task :prerelease => "prerelease:all"

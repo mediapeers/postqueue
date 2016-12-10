@@ -5,4 +5,4 @@ RSpec::Core::RakeTask.new(:spec)
 
 task :default => :spec
 
-load "tasks/release.rake"
+load "tasks/prerelease.rake"
