@@ -48,6 +48,8 @@ module VersionNumberTracker
     new_version = current.join('.')
   end
 
+  public
+
   # return current version as read from VERSION_FILE
   def read_version
     read_version = nil 
