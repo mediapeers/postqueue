@@ -9,13 +9,13 @@ describe "::Postqueue.process" do
     end
 
     it "processes one entries" do
-      r = Postqueue.process limit: 1
+      r = Postqueue.process batch_size: 1
       expect(r).to eq(["myop", "mytype", [12]])
       expect(items.map(&:entity_id)).to contain_exactly(13, 14)
     end
 
     it "processes two entries" do
-      r = Postqueue.process limit: 2
+      r = Postqueue.process batch_size: 2
       expect(r).to eq(["myop", "mytype", [12, 13]])
       expect(items.map(&:entity_id)).to contain_exactly(14)
     end
@@ -37,13 +37,13 @@ describe "::Postqueue.process" do
     end
 
     it "processes one entries" do
-      r = Postqueue.process limit: 1
+      r = Postqueue.process batch_size: 1
       expect(r).to eq(["myop", "mytype", [12]])
       expect(items.map(&:entity_id)).to contain_exactly(13, 14, 15, 16)
     end
 
     it "processes two entries" do
-      r = Postqueue.process limit: 2
+      r = Postqueue.process batch_size: 2
       expect(r).to eq(["myop", "mytype", [12, 13]])
       expect(items.map(&:entity_id)).to contain_exactly(14, 15, 16)
     end
@@ -69,13 +69,13 @@ describe "::Postqueue.process" do
     end
 
     it "removes duplicates from the queue" do
-      r = Postqueue.process limit: 1
+      r = Postqueue.process batch_size: 1
       expect(r).to eq(["myop", "mytype", [12]])
       expect(items.map(&:entity_id)).to contain_exactly(13)
     end
 
-    it "does not remove duplicates when skip_duplicates is set to false" do
-      r = Postqueue.process limit: 1, skip_duplicates: false
+    it "does not remove duplicates when remove_duplicates is set to false" do
+      r = Postqueue.process batch_size: 1, remove_duplicates: false
       expect(r).to eq(["myop", "mytype", [12]])
       expect(items.map(&:entity_id)).to contain_exactly(13, 12)
     end

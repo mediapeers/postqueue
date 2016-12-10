@@ -5,18 +5,18 @@ syntax, it needs PostgresQL >= 9.5.
 
 Why not using another queue implementation? postqueue comes with some extras:
 
-- automatic removal of duplicates
+- removal of duplicates
 - batch processing
 - searchable via SQL
 
-## Automatically remove duplicates
+## Removal of duplicates
 
 Each entry consists of the following attributes only (apart from attributes needed for internal managing queue items)
 
 - `entity_type`, `entity_id`: These entries describe the item on which to run an operation from.
 - `op`: this entry describes the operation to run. 
 
-Using the `skip_duplicates` option, postqueue processing removes duplicate entries on the queue. That means that as soon 
+Using the `remove_duplicates` option, postqueue processing removes duplicate entries on the queue. That means that as soon 
 as a certain `[ entity_type, entity_id, op ]` combination has been processed successfully, duplicates of these will also
 be removed from the queue.
 
@@ -28,7 +28,7 @@ it might be possible to provide an optimized implementation for these.
 
 Example:
 
-    Postqueue.process limit: 100, skip_duplicates: true do |op, entity_type, entity_ids|
+    Postqueue.process batch_size: 100, remove_duplicates: true do |op, entity_type, entity_ids|
       case "#{op}/#{entity_type}"
       when "reindex/product"
         Product.index_many(Product.where(id: entity_ids))
@@ -37,7 +37,7 @@ Example:
       end
     end
 
-## the queue is structured so that it can be searched via SQL
+## Searchable via SQL
 
 In contrast to other queue implementations available for Rubyists this queue formats entries in a way that
 makes it possible to query the queue via SQL. On the other hand this queue also does not allow to 
@@ -82,16 +82,16 @@ and exceptions can properly be dealt with.
 
 Postqueue.process also accepts a number of arguments:
 
-- limit: limits the number of queue items to process. Default: 100;
+- batch_size: limits the number of queue items to process. Default: 100;
 - where: add additional search conditions, Default: none;
-- skip_duplicates: when set to false do not remove all duplicates of processed entries from the queue. Default: true
+- remove_duplicates: when set to false do not remove all duplicates of processed entries from the queue. Default: true
 
 Example:
 
-    Postqueue.process({where: {entity_type: 'Product'}, limit: 10, skip_duplicates: false) do |op, entity_type, entity_ids|
+    Postqueue.process({where: {entity_type: 'Product'}, batch_size: 10, remove_duplicates: false) do |op, entity_type, entity_ids|
     end
 
-For the simple just-give-me-the-next use case there is a shortcut, which only processed the first matching entry. Under the hood this calls Postqueue.process with `limit` set to `1` and `skip_duplicates` set to `false`
+For the simple just-give-me-the-next use case there is a shortcut, which only processed the first matching entry. Under the hood this calls Postqueue.process with `batch_size` set to `1` and `remove_duplicates` set to `false`
 
     Postqueue.process_one do |op, entity_type, entity_ids|
     end

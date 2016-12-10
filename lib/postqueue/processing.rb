@@ -4,15 +4,15 @@ module Postqueue
   module Processing
     # Processes many entries
     #
-    # process limit: 100, skip_duplicates: true
+    # process batch_size: 100, remove_duplicates: true
     def process(options = {}, &block)
-      limit           = options.fetch(:limit, 100)
-      skip_duplicates = options.fetch(:skip_duplicates, true)
-      options.delete :limit
-      options.delete :skip_duplicates
+      batch_size           = options.fetch(:batch_size, 100)
+      remove_duplicates = options.fetch(:remove_duplicates, true)
+      options.delete :batch_size
+      options.delete :remove_duplicates
 
       status, result = Item.transaction do
-        process_inside_transaction options, limit: limit, skip_duplicates: skip_duplicates, &block
+        process_inside_transaction options, batch_size: batch_size, remove_duplicates: remove_duplicates, &block
       end
 
       raise result if status == :err
@@ -26,7 +26,7 @@ module Postqueue
     #   process_one do |op, entity_type
     #   end
     def process_one(options = {}, &block)
-      options = options.merge(limit: 1, skip_duplicates: false)
+      options = options.merge(batch_size: 1, remove_duplicates: false)
       process options, &block
     end
 
@@ -43,7 +43,7 @@ module Postqueue
     end
 
     # The actual processing. Returns [ :ok, number-of-items ] or  [ :err, exception ]
-    def process_inside_transaction(options, limit:, skip_duplicates:, &block)
+    def process_inside_transaction(options, batch_size:, remove_duplicates:, &block)
       relation = Item.all
       relation = relation.where(options[:where]) if options[:where]
 
@@ -51,9 +51,9 @@ module Postqueue
       return [ :ok, nil ] unless first_match
 
       # find all matching entries with the same entity_type/op value
-      if limit > 1
+      if batch_size > 1
         batch_relation = relation.where(entity_type: first_match.entity_type, op: first_match.op)
-        matches = select_and_lock(batch_relation, limit: limit)
+        matches = select_and_lock(batch_relation, limit: batch_size)
       else
         matches = [ first_match ]
       end
@@ -62,10 +62,10 @@ module Postqueue
 
       # When skipping dupes we'll find and lock all entries that match entity_type,
       # op, and one of the entity_ids in the first batch of matches
-      if skip_duplicates
+      if remove_duplicates
         entity_ids.uniq!
         process_relations = relation.where(entity_type: first_match.entity_type, op: first_match.op, entity_id: entity_ids)
-        process_items = select_and_lock process_relations, limit: nil
+        process_items = select_and_lock(process_relations, limit: nil)
       else
         process_items = matches
       end
