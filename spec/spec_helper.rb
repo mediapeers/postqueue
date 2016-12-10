@@ -14,6 +14,14 @@ end
 require 'postqueue'
 require './spec/support/configure_active_record'
 
+$logger = Logger.new(File.open("log/test.log", "a"))
+
+module Postqueue
+  def self.logger
+    $logger
+  end
+end
+
 def items
   Postqueue::Item.all
 end

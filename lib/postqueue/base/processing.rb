@@ -72,40 +72,56 @@ module Postqueue
         batch = [ first_match ]
       end
 
-      batch_ids = batch.map(&:entity_id)
+      entity_ids = batch.map(&:entity_id)
 
       # If the current operation is idempotent we will mark additional queue items as
       # in process.
       if idempotent?(op: op, entity_type: entity_type)
-        batch_ids.uniq!
-        process_relations   = relation.where(entity_type: entity_type, op: op, entity_id: batch_ids)
+        entity_ids.uniq!
+        process_relations   = relation.where(entity_type: entity_type, op: op, entity_id: entity_ids)
         items_in_processing = select_and_lock(process_relations, limit: nil)
       else
         items_in_processing = batch
       end
 
+      items_in_processing_ids = items_in_processing.map(&:id)
+
+      queue_times = Item.find_by_sql <<-SQL
+        SELECT extract('epoch' from AVG(now() - created_at)) AS avg, 
+               extract('epoch' from MAX(now() - created_at)) AS max
+        FROM postqueue WHERE entity_id IN (#{entity_ids.join(",")})
+      SQL
+      queue_time = queue_times.first
+      
       # run callback.
-      result = [ op, entity_type, batch_ids ]
-      result = yield *result if block_given?
+      result = [ op, entity_type, entity_ids ]
+
+      processing_time = Benchmark.realtime do
+        result = yield *result if block_given?
+      end
 
       # Depending on the result either reprocess or delete all items
       if result == false
-        postpone items_in_processing
+        postpone items_in_processing_ids
       else
-        Item.where(id: items_in_processing.map(&:id)).delete_all 
+        on_processing(op, entity_type, entity_ids, processing_time, queue_time)
+        Item.where(id: items_in_processing_ids).delete_all 
       end
 
       [ :ok, result ]
     rescue => e
-      puts e
-      postpone items_in_processing
+      on_exception(e, op, entity_type, entity_ids)
+      postpone items_in_processing_ids
       [ :err, e ]
     end
 
-    def postpone(items)
-      ids = items.map(&:id)
-      sql = "UPDATE postqueue SET failed_attempts = failed_attempts+1, next_run_at = next_run_at + interval '10 second' WHERE id IN (#{ids.join(",")})"
-      Item.connection.exec_query(sql)
+    def postpone(ids)
+      Item.connection.exec_query <<-SQL
+        UPDATE postqueue 
+          SET failed_attempts = failed_attempts+1, 
+              next_run_at = next_run_at + interval '10 second' 
+          WHERE id IN (#{ids.join(",")})
+      SQL
     end
   end
 end
