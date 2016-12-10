@@ -1,20 +1,44 @@
-GEM_ROOT = File.expand_path('../../', __FILE__)
-
 module VersionNumberTracker
   extend self
 
-  VERSION_FILE = Dir.glob("#{GEM_ROOT}/lib/**/*.version.rb")
-  raise VERSION_FILE.inspect 
+  # Update version entry in version_file to new_version. When new_version is nil,
+  # the new version is calculated based on the old version.
+  def update_version(new_version)
+    new_version ||= bumped_version
+    update_version_file(new_version)
+  end
 
-  VERSION_PATTERN = /VERSION = '(\d+\.\d+\.\d+)'/
+  private
+
+  def root
+    File.expand_path('../../', __FILE__)
+  end
+
+  def version_file
+    candidates = Dir.glob("#{root}/lib/**/version.rb")
+    if candidates.length != 1
+      raise "Cannot determine version.rb file. There must be exactly one of those below #{root}/lib"
+    end
+    candidates.first
+  end
+
+  def gem_name
+    candidates = Dir.glob("#{root}/*.gemspec")
+    if candidates.length != 1
+      raise "Cannot determine *.gemspec file. There must be exactly one in #{root}"
+    end
+    File.basename(candidates.first).sub(/\.gemspec\z/, "")
+  end
+
+  VERSION_PATTERN = /VERSION\s*=\s*'(\d+\.\d+\.\d+)'/
 
   def update_version_file(new_version)
-    old_version_file = File.read(VERSION_FILE)
+    old_version_file = File.read(version_file)
 
     new_version = "VERSION = '#{new_version}'"
     new_version_file_content = old_version_file.gsub(VERSION_PATTERN, new_version)
 
-    File.open(VERSION_FILE, 'w') { |file| file.puts new_version_file_content }
+    File.open(version_file, 'w') { |file| file.puts new_version_file_content }
   end
 
   def bumped_version
@@ -24,19 +48,10 @@ module VersionNumberTracker
     new_version = current.join('.')
   end
 
-  public
-
-  # Update version to new_version. WHen new_version is nil, the new version is 
-  # determined automatically.
-  def update_version(new_version)
-    new_version ||= bumped_version
-    update_version_file(new_version)
-  end
-
   # return current version as read from VERSION_FILE
   def read_version
     read_version = nil 
-    File.read(VERSION_FILE).gsub(VERSION_PATTERN) do |_|
+    File.read(version_file).gsub(VERSION_PATTERN) do |_|
       read_version = $1
     end
     read_version
@@ -60,71 +75,41 @@ def Sys?(cmd)
 end
 
 namespace :release do
-  namespace :prerequisites do
-    task :chdir do
-      Dir.chdir(GEM_ROOT)
-    end
-
-    task :git_is_on_master do
-      current_branch = `git name-rev --name-only HEAD`.chomp
+  namespace :git do
+    task :is_on_master do
+      current_branch = `git branch 2> /dev/null`.split("\n").select { |line| line =~ /\A\* / }.first
+      current_branch = current_branch[2 .. -1] if current_branch
       next if current_branch == 'master'
 
       Die! "You must be on master to release the gem, but you are on #{current_branch.inspect}."
      end
 
      # see http://stackoverflow.com/questions/2657935/checking-for-a-dirty-index-or-untracked-files-with-git
-     task :git_is_clean do
+     task :is_clean do
        next if Sys?('git diff-index --quiet --cached HEAD') && Sys?('git diff-files --quiet')
        Die!("Working directory is not clean: commit or rollback your changes!")
      end
 
-     task :git_is_uptodate do
+     task :is_uptodate do
        sh 'git pull'
      end
   end
 
-  desc 'Check release prerequisites'
-  task :prerequisites => %w(prerequisites:chdir prerequisites:git_is_on_master prerequisites:git_is_clean prerequisites:git_is_uptodate)
+  task :prerequisites => %w(git:is_on_master git:is_clean git:is_uptodate)
 
-  desc 'Bump version number'
   task :bump_version do
     VersionNumberTracker.update_version ENV['VERSION']
   end
 
-  desc 'Build gem file'
-  task :build do
-    sh('gem build mpx-tracer.gemspec')
-    sh('mv mpx-tracer-*.gem pkg')
-  end
-
-  desc 'Commit changed version files'
   task :commit do
     version = VersionNumberTracker.read_version
-    sh("git commit -m \"bump tracer to v#{version}\" #{VERSION_FILE}")
+    gem_name = VersionNumberTracker.gem_name
+    sh("git commit -m \"bump #{gem_name} to v#{version}\" #{VERSION_FILE}")
     sh("git tag -a v#{version} -m \"Tag\"")
   end
 
-  desc 'Push code and tags'
-  task :push do
-    sh('git push --follow-tags origin master')
-  end
-
-  desc 'Push Gem to gemfury'
-  task :push_to_gemfury do
-    version = VersionNumberTracker.read_version
-    gem_path = "pkg/mpx-tracer-#{version}.gem"
-    sh("bundle exec fury push #{gem_path} --as mediapeers")
-  end
-
-  task default: [
-    'prerequisites',
-    'bump_version',
-    'build',
-    'commit',
-    'push',
-    'push_to_gemfury'
-  ]
+  desc 'Prerelease tasks: increment version number and commit'
+  task prerelease: %w(prerequisites bump_version commit)
 end
 
-desc "Clean, build, commit and push"
-task release: "release:default"
+task build: "release:prerelease"
