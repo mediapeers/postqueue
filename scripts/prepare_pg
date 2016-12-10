@@ -1,0 +1,6 @@
+#!/bin/sh
+
+cat << SQL | psql -d template1
+CREATE ROLE postqueue PASSWORD 'postqueue' LOGIN;
+CREATE DATABASE postqueue_test WITH OWNER postqueue
+SQL
