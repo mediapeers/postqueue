@@ -31,8 +31,12 @@ module Postqueue
 
     # Select and lock up to \a limit unlocked items in the queue.
     def select_and_lock(relation, limit:)
+      # Ordering by next_run_at and id should not strictly be necessary, but helps 
+      # processing entries in the passed in order when enqueued at the same time.
       relation = relation.where("failed_attempts < ? AND next_run_at < ?", MAX_ATTEMPTS, Time.now).order(:next_run_at, :id)
 
+      # FOR UPDATE SKIP LOCKED selects and locks entries, but skips those that 
+      # are already locked - preventing this transaction from being locked.
       sql = relation.to_sql + " FOR UPDATE SKIP LOCKED"
       sql += " LIMIT #{limit}" if limit
       items = item_class.find_by_sql(sql)

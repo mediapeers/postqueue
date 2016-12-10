@@ -23,7 +23,10 @@ module Postqueue
       failed_attempts INTEGER NOT NULL DEFAULT 0
     );
 
+    -- This index should be usable to find idempotent duplicates in the table
     CREATE INDEX #{table_name}_idx1 ON #{table_name}(entity_id);
+    -- This index should help picking the next entries to run. Otherwise a full tablescan would be necessary
+    -- whenevr we check out items.
     CREATE INDEX #{table_name}_idx2 ON #{table_name}(next_run_at);
     SQL
   end
