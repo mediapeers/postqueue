@@ -1,6 +1,5 @@
 require 'postqueue/item'
-require 'postqueue/enqueue'
-require 'postqueue/processing'
+require 'postqueue/base'
 require 'postqueue/version'
 
 module Postqueue

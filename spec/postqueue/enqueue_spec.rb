@@ -1,8 +1,10 @@
 require 'spec_helper'
 
-describe ::Postqueue::Enqueue do
+describe 'enqueuing' do
+  let(:queue) { Postqueue.new }
+
   before do
-    Postqueue.enqueue op: "myop", entity_type: "mytype", entity_id: 12
+    queue.enqueue op: "myop", entity_type: "mytype", entity_id: 12
   end
 
   let(:item) { Postqueue::Item.first }

@@ -1,13 +1,15 @@
 module Postqueue
   MAX_ATTEMPTS = 3
 
-  module Processing
+  class Base
+
     # Processes many entries
     #
     # process batch_size: 100, remove_duplicates: true
     def process(options = {}, &block)
-      batch_size           = options.fetch(:batch_size, 100)
+      batch_size        = options.fetch(:batch_size, 100)
       remove_duplicates = options.fetch(:remove_duplicates, true)
+
       options.delete :batch_size
       options.delete :remove_duplicates
 
@@ -44,12 +46,13 @@ module Postqueue
 
     # The actual processing. Returns [ :ok, number-of-items ] or  [ :err, exception ]
     def process_inside_transaction(options, batch_size:, remove_duplicates:, &block)
-      relation = Item.all
+      relation = item_class.all
       relation = relation.where(options[:where]) if options[:where]
 
       first_match = select_and_lock(relation, limit: 1).first
       return [ :ok, nil ] unless first_match
 
+      # remove_duplicates = idempotent_operation?(entity_type: first_match.entity_type, op: first_match.op)
       # find all matching entries with the same entity_type/op value
       if batch_size > 1
         batch_relation = relation.where(entity_type: first_match.entity_type, op: first_match.op)
@@ -91,7 +94,6 @@ module Postqueue
       sql = "UPDATE postqueue SET failed_attempts = failed_attempts+1, next_run_at = next_run_at + interval '10 second' WHERE id IN (#{ids.join(",")})"
       Item.connection.exec_query(sql)
     end
+
   end
-  
-  extend Processing
 end

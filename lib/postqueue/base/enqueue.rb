@@ -1,7 +1,5 @@
 module Postqueue
-  module Enqueue
-    Item = ::Postqueue::Item
-
+  class Base
     def enqueue(op:, entity_type:, entity_id:)
       # An optimized code path, as laid out below, is 4 times as fast.
       # However, exec_query changed from Rails 4 to Rails 5.
@@ -15,9 +13,7 @@ module Postqueue
       # # Note: Rails 4 does not understand prepare: true
       # db.exec_query(sql, 'SQL', binds, prepare: true)
 
-      Item.create!(op: op, entity_type: entity_type, entity_id: entity_id)
+      self.class.item_class.create!(op: op, entity_type: entity_type, entity_id: entity_id)
     end
   end
-
-  extend Enqueue
 end
