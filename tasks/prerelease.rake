@@ -50,25 +50,12 @@ module VersionNumberTracker
 
   public
 
-  # return current version as read from VERSION_FILE
+  # return current version as read from version_file
   def read_version
-    read_version = nil 
-    File.read(version_file).gsub(VERSION_PATTERN) do |_|
-      read_version = $1
-    end
-    read_version
+    hits = File.read(version_file).scan(VERSION_PATTERN).first
+    raise "Can't detect verson string in #{version_file}" if !hits
+    hits.first
   end
-end
-
-def Die!(msg)
-  red_msg = "\e[31m#{msg}\e[0m"
-  STDERR.puts red_msg
-  exit 1
-end
-
-def Warn!(msg)
-  yellow_msg = "\e[33m#{msg}\e[0m"
-  STDERR.puts yellow_msg
 end
 
 def Sys?(cmd)
@@ -83,13 +70,16 @@ namespace :prerelease do
       current_branch = current_branch[2 .. -1] if current_branch
       next if current_branch == 'master'
 
-      Die! "You must be on master to release the gem, but you are on #{current_branch.inspect}."
+      Bundler.ui.error("You must be on master to release the gem, but you are on #{current_branch.inspect}.")
+      exit 1
      end
 
      # see http://stackoverflow.com/questions/2657935/checking-for-a-dirty-index-or-untracked-files-with-git
      task :is_clean do
        next if Sys?('git diff-index --quiet --cached HEAD') && Sys?('git diff-files --quiet')
-       Die!("Working directory is not clean: commit or rollback your changes!")
+
+       Bundler.ui.error("Working directory is not clean: commit or rollback your changes!")
+       exit 1
      end
 
      task :is_uptodate do
