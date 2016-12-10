@@ -1,5 +1,5 @@
 module Postqueue
-  MAX_ATTEMPTS = 3
+  MAX_ATTEMPTS = 5
 
   class Base
 
@@ -119,7 +119,7 @@ module Postqueue
       item_class.connection.exec_query <<-SQL
         UPDATE #{item_class.table_name} 
           SET failed_attempts = failed_attempts+1, 
-              next_run_at = next_run_at + interval '10 second' 
+              next_run_at = next_run_at + power(failed_attempts + 1, 1.5) * interval '10 second' 
           WHERE id IN (#{ids.join(",")})
       SQL
     end
