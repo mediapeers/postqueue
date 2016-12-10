@@ -67,7 +67,7 @@ describe "Idempotent queue" do
     end
 
     it "honors search conditions" do
-      r = queue.process(where: { op: "otherop" })
+      r = queue.process(op: "otherop")
       expect(r).to eq(["otherop", "mytype", [14]])
       expect(items.map(&:entity_id)).to contain_exactly(12, 13, 15, 16)
     end

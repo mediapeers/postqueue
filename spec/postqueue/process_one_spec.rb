@@ -20,14 +20,14 @@ describe "::queue.process_one" do
   it "honors search conditions" do
     queue.enqueue op: "otherop", entity_type: "mytype", entity_id: 112
 
-    r = queue.process_one(where: { op: "otherop" })
+    r = queue.process_one(op: "otherop")
     expect(r).to eq(["otherop", "mytype", [112]])
     expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
   end
 
   it "yields a block and returns it" do
     queue.enqueue op: "otherop", entity_type: "mytype", entity_id: 112 
-    r = queue.process_one(where: { op: "otherop" }) do |op, type, ids|
+    r = queue.process_one(op: "otherop") do |op, type, ids|
       expect(op).to eq("otherop")
       expect(type).to eq("mytype")
       expect(ids).to eq([112])

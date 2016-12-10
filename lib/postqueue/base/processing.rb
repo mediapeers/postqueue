@@ -6,20 +6,17 @@ module Postqueue
     # Processes many entries
     #
     # process batch_size: 100
-    def process(options = {}, &block)
-      batch_size        = options.fetch(:batch_size, 100)
-      options.delete :batch_size
-
+    def process(entity_type:nil, op:nil, batch_size:100, &block)
       status, result = Item.transaction do
-        process_inside_transaction options, batch_size: batch_size, &block
+        process_inside_transaction(entity_type: entity_type, op: op, batch_size: batch_size, &block)
       end
 
       raise result if status == :err
       result
     end
 
-    def process_one(options = {}, &block)
-      process(options.merge(batch_size: 1), &block)
+    def process_one(entity_type:nil, op:nil, &block)
+      process(entity_type: entity_type, op: op, batch_size: 1, &block)
     end
 
     def idempotent?(entity_type:, op:)
@@ -55,19 +52,21 @@ module Postqueue
     end
 
     # The actual processing. Returns [ :ok, number-of-items ] or  [ :err, exception ]
-    def process_inside_transaction(options, batch_size: nil, &block)
+    def process_inside_transaction(entity_type:, op:, batch_size:, &block)
       relation = item_class.all
-      relation = relation.where(options[:where]) if options[:where]
+      relation = relation.where(entity_type: entity_type) if entity_type
+      relation = relation.where(op: op) if op
 
       first_match = select_and_lock(relation, limit: 1).first
       return [ :ok, nil ] unless first_match
+      op, entity_type = first_match.op, first_match.entity_type
 
       # determine batch to process. Whether or not an operation can be batched is defined
       # by the Base#batch_size method. If that signals batch processing by returning a
       # number > 0, then the passed in batch_size provides an additional upper limit.
-      batch_size = calculate_batch_size(op: first_match.op, entity_type: first_match.entity_type, batch_size: batch_size)
+      batch_size = calculate_batch_size(op: op, entity_type: entity_type, batch_size: batch_size)
       if batch_size > 1
-        batch_relation = relation.where(entity_type: first_match.entity_type, op: first_match.op)
+        batch_relation = relation.where(entity_type: entity_type, op: op)
         batch = select_and_lock(batch_relation, limit: batch_size)
       else
         batch = [ first_match ]
@@ -77,16 +76,16 @@ module Postqueue
 
       # If the current operation is idempotent we will mark additional queue items as
       # in process.
-      if idempotent?(op: first_match.op, entity_type: first_match.entity_type)
+      if idempotent?(op: op, entity_type: entity_type)
         batch_ids.uniq!
-        process_relations   = relation.where(entity_type: first_match.entity_type, op: first_match.op, entity_id: batch_ids)
+        process_relations   = relation.where(entity_type: entity_type, op: op, entity_id: batch_ids)
         items_in_processing = select_and_lock(process_relations, limit: nil)
       else
         items_in_processing = batch
       end
 
       # run callback.
-      result = [ first_match.op, first_match.entity_type, batch_ids ]
+      result = [ op, entity_type, batch_ids ]
       result = yield *result if block_given?
 
       # Depending on the result either reprocess or delete all items
