@@ -22,6 +22,8 @@ module VersionNumberTracker
     candidates.first
   end
 
+  public
+
   def gem_name
     candidates = Dir.glob("#{root}/*.gemspec")
     if candidates.length != 1
@@ -29,6 +31,8 @@ module VersionNumberTracker
     end
     File.basename(candidates.first).sub(/\.gemspec\z/, "")
   end
+
+  private
 
   VERSION_PATTERN = /VERSION\s*=\s*'(\d+\.\d+\.\d+)'/
 
