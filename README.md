@@ -27,7 +27,7 @@ end
 
 The callback will receive the `op` and `entity_type` attributes and the `entity_ids` of all queue entries
 selected for processing. If the block fails, by either returning `false` or by raising an exception the
-queue entries are postponed a bit, up until `Postqueue::MAX_ATTEMPS` times (which currently is defined as 5).
+queue entries are postponed a bit, up until `Postqueue::MAX_ATTEMPTS` times (which currently is defined as 5).
 
 The method will return the return value of the block. 
 
