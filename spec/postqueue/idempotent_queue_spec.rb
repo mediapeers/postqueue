@@ -1,19 +1,23 @@
-require 'spec_helper'
+require "spec_helper"
 
 describe "Idempotent queue" do
   class Testqueue < Postqueue::Base
-    def idempotent?(entity_type:,op:)
+    def idempotent?(entity_type:, op:)
+      _ = entity_type
+      _ = op
       true
     end
 
-    def batch_size(entity_type:,op:)
+    def batch_size(entity_type:, op:)
+      _ = entity_type
+      _ = op
       100
     end
   end
 
   let(:queue) { Testqueue.new }
 
-  context 'when having entries with the same entity_type and op' do
+  context "when having entries with the same entity_type and op" do
     before do
       queue.enqueue op: "myop", entity_type: "mytype", entity_id: 12
       queue.enqueue op: "myop", entity_type: "mytype", entity_id: 13
@@ -35,11 +39,11 @@ describe "Idempotent queue" do
     it "processes many entries" do
       r = queue.process
       expect(r).to eq(["myop", "mytype", [12, 13, 14]])
-      expect(items.map(&:entity_id)).to contain_exactly()
+      expect(items.map(&:entity_id)).to contain_exactly
     end
   end
 
-  context 'when having entries with different entity_type and op' do
+  context "when having entries with different entity_type and op" do
     before do
       queue.enqueue op: "myop", entity_type: "mytype", entity_id: 12
       queue.enqueue op: "myop", entity_type: "mytype", entity_id: 13
@@ -72,8 +76,8 @@ describe "Idempotent queue" do
       expect(items.map(&:entity_id)).to contain_exactly(12, 13, 15, 16)
     end
   end
-  
-  context 'when having duplicate entries' do
+
+  context "when having duplicate entries" do
     before do
       queue.enqueue op: "myop", entity_type: "mytype", entity_id: 12
       queue.enqueue op: "myop", entity_type: "mytype", entity_id: 13

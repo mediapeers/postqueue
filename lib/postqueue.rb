@@ -1,6 +1,6 @@
-require 'postqueue/item'
-require 'postqueue/base'
-require 'postqueue/version'
+require "postqueue/item"
+require "postqueue/base"
+require "postqueue/version"
 
 module Postqueue
 end

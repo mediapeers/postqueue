@@ -1,4 +1,4 @@
-require 'spec_helper'
+require "spec_helper"
 
 describe "::queue.process_one" do
   let(:queue) { Postqueue.new }
@@ -26,7 +26,7 @@ describe "::queue.process_one" do
   end
 
   it "yields a block and returns it" do
-    queue.enqueue op: "otherop", entity_type: "mytype", entity_id: 112 
+    queue.enqueue op: "otherop", entity_type: "mytype", entity_id: 112
     r = queue.process_one(op: "otherop") do |op, type, ids|
       expect(op).to eq("otherop")
       expect(type).to eq("mytype")

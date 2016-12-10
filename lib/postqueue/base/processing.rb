@@ -2,11 +2,10 @@ module Postqueue
   MAX_ATTEMPTS = 5
 
   class Base
-
     # Processes many entries
     #
     # process batch_size: 100
-    def process(entity_type:nil, op:nil, batch_size:100, &block)
+    def process(entity_type: nil, op: nil, batch_size: 100, &block)
       status, result = item_class.transaction do
         process_inside_transaction(entity_type: entity_type, op: op, batch_size: batch_size, &block)
       end
@@ -15,15 +14,19 @@ module Postqueue
       result
     end
 
-    def process_one(entity_type:nil, op:nil, &block)
+    def process_one(entity_type: nil, op: nil, &block)
       process(entity_type: entity_type, op: op, batch_size: 1, &block)
     end
 
     def idempotent?(entity_type:, op:)
+      _ = entity_type
+      _ = op
       false
     end
 
     def batch_size(entity_type:, op:)
+      _ = entity_type
+      _ = op
       10
     end
 
@@ -31,11 +34,11 @@ module Postqueue
 
     # Select and lock up to \a limit unlocked items in the queue.
     def select_and_lock(relation, limit:)
-      # Ordering by next_run_at and id should not strictly be necessary, but helps 
+      # Ordering by next_run_at and id should not strictly be necessary, but helps
       # processing entries in the passed in order when enqueued at the same time.
       relation = relation.where("failed_attempts < ? AND next_run_at < ?", MAX_ATTEMPTS, Time.now).order(:next_run_at, :id)
 
-      # FOR UPDATE SKIP LOCKED selects and locks entries, but skips those that 
+      # FOR UPDATE SKIP LOCKED selects and locks entries, but skips those that
       # are already locked - preventing this transaction from being locked.
       sql = relation.to_sql + " FOR UPDATE SKIP LOCKED"
       sql += " LIMIT #{limit}" if limit
@@ -48,7 +51,7 @@ module Postqueue
       processor_batch_size = self.batch_size(op: op, entity_type: entity_type)
       if !processor_batch_size || processor_batch_size < 2
         1
-      elsif(!batch_size)
+      elsif !batch_size
         processor_batch_size
       else
         [ processor_batch_size, batch_size ].min
@@ -56,14 +59,15 @@ module Postqueue
     end
 
     # The actual processing. Returns [ :ok, number-of-items ] or  [ :err, exception ]
-    def process_inside_transaction(entity_type:, op:, batch_size:, &block)
+    def process_inside_transaction(entity_type:, op:, batch_size:, &_block)
       relation = item_class.all
       relation = relation.where(entity_type: entity_type) if entity_type
       relation = relation.where(op: op) if op
 
       first_match = select_and_lock(relation, limit: 1).first
       return [ :ok, nil ] unless first_match
-      op, entity_type = first_match.op, first_match.entity_type
+      op = first_match.op
+      entity_type = first_match.entity_type
 
       # determine batch to process. Whether or not an operation can be batched is defined
       # by the Base#batch_size method. If that signals batch processing by returning a
@@ -91,17 +95,17 @@ module Postqueue
       items_in_processing_ids = items_in_processing.map(&:id)
 
       queue_times = item_class.find_by_sql <<-SQL
-        SELECT extract('epoch' from AVG(now() - created_at)) AS avg, 
+        SELECT extract('epoch' from AVG(now() - created_at)) AS avg,
                extract('epoch' from MAX(now() - created_at)) AS max
-        FROM #{item_class.table_name} WHERE entity_id IN (#{entity_ids.join(",")})
+        FROM #{item_class.table_name} WHERE entity_id IN (#{entity_ids.join(',')})
       SQL
       queue_time = queue_times.first
-      
+
       # run callback.
       result = [ op, entity_type, entity_ids ]
 
       processing_time = Benchmark.realtime do
-        result = yield *result if block_given?
+        result = yield(*result) if block_given?
       end
 
       # Depending on the result either reprocess or delete all items
@@ -109,7 +113,7 @@ module Postqueue
         postpone items_in_processing_ids
       else
         on_processing(op, entity_type, entity_ids, processing_time, queue_time)
-        item_class.where(id: items_in_processing_ids).delete_all 
+        item_class.where(id: items_in_processing_ids).delete_all
       end
 
       [ :ok, result ]
@@ -121,10 +125,10 @@ module Postqueue
 
     def postpone(ids)
       item_class.connection.exec_query <<-SQL
-        UPDATE #{item_class.table_name} 
-          SET failed_attempts = failed_attempts+1, 
-              next_run_at = next_run_at + power(failed_attempts + 1, 1.5) * interval '10 second' 
-          WHERE id IN (#{ids.join(",")})
+        UPDATE #{item_class.table_name}
+          SET failed_attempts = failed_attempts+1,
+              next_run_at = next_run_at + power(failed_attempts + 1, 1.5) * interval '10 second'
+          WHERE id IN (#{ids.join(',')})
       SQL
     end
   end

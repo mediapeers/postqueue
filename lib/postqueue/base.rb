@@ -11,11 +11,14 @@ module Postqueue
     end
 
     def on_processing(op, entity_type, entity_ids, runtime, queue_time)
-      logger.info "processing '#{op}/#{entity_type}' for id(s) #{entity_ids.join(",")}: processing #{entity_ids.length} items took #{"%.3f msecs" % runtime}, queue_time: avg: #{"%.3f msecs" % queue_time.avg}/max: #{"%.3f msecs" % queue_time.max}"
+      msg = "processing '#{op}/#{entity_type}' for id(s) #{entity_ids.join(',')}: "
+      msg += "processing #{entity_ids.length} items took #{'%.3f msecs' % runtime}"
+      msg += ", queue_time: avg: #{'%.3f msecs' % queue_time.avg}/max: #{'%.3f msecs' % queue_time.max}"
+      logger.info msg
     end
 
     def on_exception(exception, op, entity_type, entity_ids)
-      logger.warn "processing '#{op}/#{entity_type}' for id(s) #{entity_ids.join(",")}: caught #{exception}"
+      logger.warn "processing '#{op}/#{entity_type}' for id(s) #{entity_ids.join(',')}: caught #{exception}"
     end
   end
 
@@ -28,5 +31,5 @@ module Postqueue
   end
 end
 
-require 'postqueue/base/enqueue'
-require 'postqueue/base/processing'
+require "postqueue/base/enqueue"
+require "postqueue/base/processing"

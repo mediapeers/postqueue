@@ -14,7 +14,7 @@ module Postqueue
   def self.migrate!(table_name = "postqueue")
     Item.connection.execute <<-SQL
     CREATE TABLE #{table_name} (
-      id          SERIAL PRIMARY KEY, 
+      id          SERIAL PRIMARY KEY,
       op          VARCHAR,
       entity_type VARCHAR,
       entity_id   INTEGER NOT NULL DEFAULT 0,

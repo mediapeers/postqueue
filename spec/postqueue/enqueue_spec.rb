@@ -1,6 +1,6 @@
-require 'spec_helper'
+require "spec_helper"
 
-describe 'enqueuing' do
+describe "enqueuing" do
   let(:queue) { Postqueue.new }
 
   before do
@@ -9,13 +9,13 @@ describe 'enqueuing' do
 
   let(:item) { Postqueue::Item.first }
 
-  it 'enqueues items' do
+  it "enqueues items" do
     expect(item.op).to eq("myop")
     expect(item.entity_type).to eq("mytype")
     expect(item.entity_id).to eq(12)
   end
 
-  it 'sets defaults' do
+  it "sets defaults" do
     expect(item.created_at).to be > (Time.now - 1.second)
     expect(item.next_run_at).to be > (Time.now - 1.second)
     expect(item.failed_attempts).to eq(0)
