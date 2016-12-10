@@ -5,15 +5,15 @@ module Postqueue
     self.table_name = :postqueue
   end
 
-  def self.unmigrate!
+  def self.unmigrate!(table_name = "postqueue")
     Item.connection.execute <<-SQL
-      DROP TABLE IF EXISTS postqueue;
+      DROP TABLE IF EXISTS #{table_name};
     SQL
   end
 
-  def self.migrate!
+  def self.migrate!(table_name = "postqueue")
     Item.connection.execute <<-SQL
-    CREATE TABLE postqueue (
+    CREATE TABLE #{table_name} (
       id          SERIAL PRIMARY KEY, 
       op          VARCHAR,
       entity_type VARCHAR,
@@ -23,8 +23,8 @@ module Postqueue
       failed_attempts INTEGER NOT NULL DEFAULT 0
     );
 
-    CREATE INDEX postqueue_idx1 ON postqueue(entity_id);
-    CREATE INDEX postqueue_idx2 ON postqueue(next_run_at);
+    CREATE INDEX #{table_name}_idx1 ON #{table_name}(entity_id);
+    CREATE INDEX #{table_name}_idx2 ON #{table_name}(next_run_at);
     SQL
   end
 end

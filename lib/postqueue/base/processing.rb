@@ -7,7 +7,7 @@ module Postqueue
     #
     # process batch_size: 100
     def process(entity_type:nil, op:nil, batch_size:100, &block)
-      status, result = Item.transaction do
+      status, result = item_class.transaction do
         process_inside_transaction(entity_type: entity_type, op: op, batch_size: batch_size, &block)
       end
 
@@ -35,7 +35,7 @@ module Postqueue
 
       sql = relation.to_sql + " FOR UPDATE SKIP LOCKED"
       sql += " LIMIT #{limit}" if limit
-      items = Item.find_by_sql(sql)
+      items = item_class.find_by_sql(sql)
 
       items
     end
@@ -86,10 +86,10 @@ module Postqueue
 
       items_in_processing_ids = items_in_processing.map(&:id)
 
-      queue_times = Item.find_by_sql <<-SQL
+      queue_times = item_class.find_by_sql <<-SQL
         SELECT extract('epoch' from AVG(now() - created_at)) AS avg, 
                extract('epoch' from MAX(now() - created_at)) AS max
-        FROM postqueue WHERE entity_id IN (#{entity_ids.join(",")})
+        FROM #{item_class.table_name} WHERE entity_id IN (#{entity_ids.join(",")})
       SQL
       queue_time = queue_times.first
       
@@ -105,7 +105,7 @@ module Postqueue
         postpone items_in_processing_ids
       else
         on_processing(op, entity_type, entity_ids, processing_time, queue_time)
-        Item.where(id: items_in_processing_ids).delete_all 
+        item_class.where(id: items_in_processing_ids).delete_all 
       end
 
       [ :ok, result ]
@@ -116,8 +116,8 @@ module Postqueue
     end
 
     def postpone(ids)
-      Item.connection.exec_query <<-SQL
-        UPDATE postqueue 
+      item_class.connection.exec_query <<-SQL
+        UPDATE #{item_class.table_name} 
           SET failed_attempts = failed_attempts+1, 
               next_run_at = next_run_at + interval '10 second' 
           WHERE id IN (#{ids.join(",")})

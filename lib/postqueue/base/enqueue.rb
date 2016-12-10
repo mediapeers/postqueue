@@ -4,7 +4,7 @@ module Postqueue
       # An optimized code path, as laid out below, is 4 times as fast.
       # However, exec_query changed from Rails 4 to Rails 5.
 
-      # sql = "INSERT INTO postqueue (op, entity_type, entity_id) VALUES($1, $2, $3)"
+      # sql = "INSERT INTO #{item_class.table_name} (op, entity_type, entity_id) VALUES($1, $2, $3)"
       # binds = [ ]
       #
       # binds << ActiveRecord::Attribute.from_user("name", op,  ::ActiveRecord::Type::String.new)
