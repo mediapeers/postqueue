@@ -110,7 +110,7 @@ namespace :release do
   task :commit do
     version = VersionNumberTracker.read_version
     gem_name = VersionNumberTracker.gem_name
-    sh("git commit -m \"bump #{gem_name} to v#{version}\" #{VERSION_FILE}")
+    sh("git commit -m \"bump #{gem_name} to v#{version}\" #{version_file}")
     sh("git tag -a v#{version} -m \"Tag\"")
   end
 
