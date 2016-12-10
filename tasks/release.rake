@@ -8,8 +8,6 @@ module VersionNumberTracker
     update_version_file(new_version)
   end
 
-  private
-
   def root
     File.expand_path('../../', __FILE__)
   end
@@ -21,8 +19,6 @@ module VersionNumberTracker
     end
     candidates.first
   end
-
-  public
 
   def gem_name
     candidates = Dir.glob("#{root}/*.gemspec")
