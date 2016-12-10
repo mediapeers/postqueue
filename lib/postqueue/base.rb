@@ -1,10 +1,10 @@
 module Postqueue
   class Base
-    class << self
-      attr_accessor :item_class
-    end
+    private
 
-    self.item_class = Postqueue::Item
+    def item_class
+      Postqueue::Item
+    end
   end
 
   def self.new

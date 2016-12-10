@@ -1,7 +1,17 @@
 require 'spec_helper'
 
-describe "::queue.process" do
-  let(:queue) { Postqueue.new }
+describe "Idempotent queue" do
+  class Testqueue < Postqueue::Base
+    def idempotent?(entity_type:,op:)
+      true
+    end
+
+    def batch_size(entity_type:,op:)
+      100
+    end
+  end
+
+  let(:queue) { Testqueue.new }
 
   context 'when having entries with the same entity_type and op' do
     before do
@@ -74,12 +84,6 @@ describe "::queue.process" do
       r = queue.process batch_size: 1
       expect(r).to eq(["myop", "mytype", [12]])
       expect(items.map(&:entity_id)).to contain_exactly(13)
-    end
-
-    it "does not remove duplicates when remove_duplicates is set to false" do
-      r = queue.process batch_size: 1, remove_duplicates: false
-      expect(r).to eq(["myop", "mytype", [12]])
-      expect(items.map(&:entity_id)).to contain_exactly(13, 12)
     end
   end
 end

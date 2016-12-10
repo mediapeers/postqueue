@@ -13,7 +13,7 @@ module Postqueue
       # # Note: Rails 4 does not understand prepare: true
       # db.exec_query(sql, 'SQL', binds, prepare: true)
 
-      self.class.item_class.create!(op: op, entity_type: entity_type, entity_id: entity_id)
+      item_class.create!(op: op, entity_type: entity_type, entity_id: entity_id)
     end
   end
 end
