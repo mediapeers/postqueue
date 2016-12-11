@@ -1,19 +1,29 @@
 module Postqueue
   class Base
+    # Enqueues an queue item. If the operation, as defined by op and entity_type, is idempotent
+    # (as determined by the Postqueue::Base#idempotent? method), and an entry with the same
+    # combination of attributes exists already, no entry will be added to the queue.
     def enqueue(op:, entity_type:, entity_id:)
-      # An optimized code path, as laid out below, is 4 times as fast.
-      # However, exec_query changed from Rails 4 to Rails 5.
+      if entity_id.is_a?(Array)
+        enqueue_many(op: op, entity_type: entity_type, entity_ids: entity_id)
+      end
 
-      # sql = "INSERT INTO #{item_class.table_name} (op, entity_type, entity_id) VALUES($1, $2, $3)"
-      # binds = [ ]
-      #
-      # binds << ActiveRecord::Attribute.from_user("name", op,  ::ActiveRecord::Type::String.new)
-      # binds << ActiveRecord::Attribute.from_user("entity_type", entity_type, ::ActiveRecord::Type::String.new)
-      # binds << ActiveRecord::Attribute.from_user("entity_id", entity_id, ::ActiveRecord::Type::Integer.new)
-      # # Note: Rails 4 does not understand prepare: true
-      # db.exec_query(sql, 'SQL', binds, prepare: true)
+      # An optimized code path, talking directly to PG, might be faster by a factor of 4 to 5 or so.
+      if idempotent?(op: op, entity_type: entity_type)
+        return if item_class.where(op: op, entity_type: entity_type, entity_id: entity_id).present?
+      end
 
       item_class.create!(op: op, entity_type: entity_type, entity_id: entity_id)
+    end
+
+    private
+
+    def enqueue_many(op:, entity_type:, entity_ids:) #:nodoc:
+      item_class.transaction do
+        entity_ids.each do |entity_id|
+          enqueue(op: op, entity_type: entity_type, entity_id: entity_id)
+        end
+      end
     end
   end
 end

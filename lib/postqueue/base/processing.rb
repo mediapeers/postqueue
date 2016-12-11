@@ -18,81 +18,26 @@ module Postqueue
       process(entity_type: entity_type, op: op, batch_size: 1, &block)
     end
 
-    def idempotent?(entity_type:, op:)
-      _ = entity_type
-      _ = op
-      false
-    end
-
-    def batch_size(entity_type:, op:)
-      _ = entity_type
-      _ = op
-      10
-    end
-
     private
 
-    # Select and lock up to \a limit unlocked items in the queue.
-    def select_and_lock(relation, limit:)
-      # Ordering by next_run_at and id should not strictly be necessary, but helps
-      # processing entries in the passed in order when enqueued at the same time.
-      relation = relation.where("failed_attempts < ? AND next_run_at < ?", MAX_ATTEMPTS, Time.now).order(:next_run_at, :id)
-
-      # FOR UPDATE SKIP LOCKED selects and locks entries, but skips those that
-      # are already locked - preventing this transaction from being locked.
-      sql = relation.to_sql + " FOR UPDATE SKIP LOCKED"
-      sql += " LIMIT #{limit}" if limit
-      items = item_class.find_by_sql(sql)
-
-      items
-    end
-
-    def calculate_batch_size(op:, entity_type:, batch_size:)
-      processor_batch_size = self.batch_size(op: op, entity_type: entity_type)
-      if !processor_batch_size || processor_batch_size < 2
-        1
-      elsif !batch_size
-        processor_batch_size
-      else
-        [ processor_batch_size, batch_size ].min
-      end
+    def calculate_batch_size(op:, entity_type:, max_batch_size:)
+      recommended_batch_size = batch_size(op: op, entity_type: entity_type) || 1
+      return 1 if recommended_batch_size < 2
+      return recommended_batch_size unless max_batch_size
+      [ recommended_batch_size, max_batch_size ].min
     end
 
     # The actual processing. Returns [ :ok, number-of-items ] or  [ :err, exception ]
     def process_inside_transaction(entity_type:, op:, batch_size:, &_block)
-      relation = item_class.all
-      relation = relation.where(entity_type: entity_type) if entity_type
-      relation = relation.where(op: op) if op
+      batch = select_and_lock_batch(entity_type: entity_type, op: op, batch_size: batch_size)
 
-      first_match = select_and_lock(relation, limit: 1).first
+      first_match = batch.first
       return [ :ok, nil ] unless first_match
-      op = first_match.op
-      entity_type = first_match.entity_type
-
-      # determine batch to process. Whether or not an operation can be batched is defined
-      # by the Base#batch_size method. If that signals batch processing by returning a
-      # number > 0, then the passed in batch_size provides an additional upper limit.
-      batch_size = calculate_batch_size(op: op, entity_type: entity_type, batch_size: batch_size)
-      if batch_size > 1
-        batch_relation = relation.where(entity_type: entity_type, op: op)
-        batch = select_and_lock(batch_relation, limit: batch_size)
-      else
-        batch = [ first_match ]
-      end
+      op = batch.first.op
+      entity_type = batch.first.entity_type
 
       entity_ids = batch.map(&:entity_id)
-
-      # If the current operation is idempotent we will mark additional queue items as
-      # in process.
-      if idempotent?(op: op, entity_type: entity_type)
-        entity_ids.uniq!
-        process_relations   = relation.where(entity_type: entity_type, op: op, entity_id: entity_ids)
-        items_in_processing = select_and_lock(process_relations, limit: nil)
-      else
-        items_in_processing = batch
-      end
-
-      items_in_processing_ids = items_in_processing.map(&:id)
+      batch_ids = batch.map(&:id)
 
       queue_times = item_class.find_by_sql <<-SQL
         SELECT extract('epoch' from AVG(now() - created_at)) AS avg,
@@ -110,16 +55,16 @@ module Postqueue
 
       # Depending on the result either reprocess or delete all items
       if result == false
-        postpone items_in_processing_ids
+        postpone batch_ids
       else
         on_processing(op, entity_type, entity_ids, processing_time, queue_time)
-        item_class.where(id: items_in_processing_ids).delete_all
+        item_class.where(id: batch_ids).delete_all
       end
 
       [ :ok, result ]
     rescue => e
       on_exception(e, op, entity_type, entity_ids)
-      postpone items_in_processing_ids
+      postpone batch_ids
       [ :err, e ]
     end
 

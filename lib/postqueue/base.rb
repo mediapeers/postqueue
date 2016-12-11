@@ -2,6 +2,18 @@ module Postqueue
   class Base
     private
 
+    def idempotent?(entity_type:, op:)
+      _ = entity_type
+      _ = op
+      false
+    end
+
+    def batch_size(entity_type:, op:)
+      _ = entity_type
+      _ = op
+      10
+    end
+
     def item_class
       Postqueue::Item
     end
@@ -18,18 +30,15 @@ module Postqueue
     end
 
     def on_exception(exception, op, entity_type, entity_ids)
-      logger.warn "processing '#{op}/#{entity_type}' for id(s) #{entity_ids.join(',')}: caught #{exception}"
+      logger.warn "processing '#{op}/#{entity_type}' for id(s) #{entity_ids.inspect}: caught #{exception}"
     end
   end
 
   def self.logger
     Logger.new(STDERR)
   end
-
-  def self.new
-    Base.new
-  end
 end
 
 require "postqueue/base/enqueue"
+require "postqueue/base/select_and_lock"
 require "postqueue/base/processing"
