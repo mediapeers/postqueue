@@ -30,12 +30,12 @@ module VersionNumberTracker
 
   private
 
-  VERSION_PATTERN = /VERSION\s*=\s*'(\d+\.\d+\.\d+)'/
+  VERSION_PATTERN = /VERSION\s*=\s*['"](\d+\.\d+\.\d+)['"]/
 
   def update_version_file(new_version)
     old_version_file = File.read(version_file)
 
-    new_version = "VERSION = '#{new_version}'"
+    new_version = "VERSION = \"#{new_version}\""
     new_version_file_content = old_version_file.gsub(VERSION_PATTERN, new_version)
 
     File.open(version_file, "w") { |file| file.puts new_version_file_content }
@@ -53,6 +53,7 @@ module VersionNumberTracker
   # return current version as read from version_file
   def read_version
     hits = File.read(version_file).scan(VERSION_PATTERN).first
+    p hits
     raise "Can't detect verson string in #{version_file}" unless hits
     hits.first
   end
