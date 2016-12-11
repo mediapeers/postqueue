@@ -13,56 +13,63 @@ Why not using another queue implementation? postqueue comes with some extras:
 
 ```ruby
 queue = PostgresQL::Base.new
-queue.enqueue op: "myop", entity_type: "mytype", entity_id: 12
-queue.process do |op, entity_type, entity_ids|
+queue.enqueue op: "product/reindex", entity_id: [12,13,14,15]
+queue.process do |op, entity_ids|
   # note: entity_ids is always an Array of ids.
-  case "#{op}/#{entity_type}"
-  when "reindex/product"
+  case op
+  when "product/reindex"
     Product.index_many(Product.where(id: entity_ids))
   else
-    raise "Unsupported op/entity_type: #{op}/#{entity_type}"
+    raise "Unsupported op: #{op}"
   end
 end
 ```
 
-The callback will receive the `op` and `entity_type` attributes and the `entity_ids` of all queue entries
-selected for processing. If the block fails, by either returning `false` or by raising an exception the
-queue entries are postponed a bit, up until `Postqueue::MAX_ATTEMPTS` times (which currently is defined as 5).
+The process call will select a number of queue items for processing. They will all have 
+the same `op` attribute. The callback will receive the `op` attribute and the `entity_ids`
+of all queue entries selected for processing. The `processing` method will return the 
+return value of the block.
 
-The method will return the return value of the block. 
-
-If no callback is given the return value will be the `[op, entity_type, entity_ids]` values that would have
-been sent to the block. This is highly unrecommended though, since when using a block to do processing errors
-and exceptions can properly be dealt with.
+If no callback is given the return value will be the `[op, entity_ids]` values
+that would have been sent to the block. This is highly unrecommended though, since 
+when using a block to do processing errors and exceptions can properly be dealt with.
 
 Postqueue.process also accepts the following arguments:
 
-- `entity_type`: only process entries with this `entity_type`;
 - `op`: only process entries with this `op` value;
-- `batch_size`: when the first matching entry supports batch processing limit the size of the batch to the bassed in size.
+- `batch_size`: maximum number of items to process in one go.
 
 Example:
 
-    Postqueue.process(entity_type: 'Product', batch_size: 10) do |op, entity_type, entity_ids|
-      # only handle Product entries
+    Postqueue.process(op: 'product/reindex', batch_size: 10) do |op, entity_ids|
+      # only handle up to 10 "product/reindex" entries
     end
 
-If the queue is empty or no matching queue entry could be found, both `Postqueue.process` and `Postqueue.process_one` will return nil.
+If the block fails, by either returning `false` or by raising an exception the queue will
+postpone processing these entries by an increasing amount of time, up until 
+`Postqueue::MAX_ATTEMPTS` failed attempts. The current MAX_ATTEMPTS definition
+leads to a maximum postpone interval (currently up to 190 seconds).
+
+If the queue is empty or no matching queue entry could be found, `Postqueue.process` 
+returns nil.
 
 ### process a single entry
 
-For the simple just-give-me-the-next use case there is a shortcut, which only processed the first matching entry. Under the hood this calls Postqueue.process with `batch_size` set to `1`.
+Postqueue implements a shortcut to process only a single entry. Under the hood this 
+calls `Postqueue.process` with `batch_size` set to `1`:
 
-    Postqueue.process_one do |op, entity_type, entity_ids|
+    Postqueue.process_one do |op, entity_ids|
     end
 
-Note that even though `process_one` will only ever process a single entry the `entity_ids` parameter to the block is still an array (holding a single ID in that case).
+Note that even though `process_one` will only ever process a single entry the 
+`entity_ids` parameter to the block is still an array (holding a single ID 
+in that case).
 
 ## idempotent operations
 
-If queue items represent idempotent operations they need not be run repeatedly, but only once. To implement idempotent
-operations, subclass `Postqueue::Base` and reimplement the `idempotent?` method. The following marks all "reindex" 
-ops as idempotent:
+Postqueue comes with simple support for idempotent operations: if an operation is deemed
+idempotent it is not enqueued again if it can be found in the queue already. Note that 
+a queue item will be created if another item is currently being processed.
 
     class Testqueue < Postqueue::Base
       def idempotent?(entity_type:,op:)
@@ -72,22 +79,22 @@ ops as idempotent:
 
 ## batch processing
 
-Often queue items can be processed in batches for a better performance of the entire system. To enable
-batch processing for some items subclass `Postqueue::Base` and reimplement the `batch_size?` method
-to return a suggested batch_size for a specific operation. The following implements a batch_size of 100
-for all queue entries: 
+Often queue items can be processed in batches for a better performance of the entire system. 
+To allow batch processing for some items subclass `Postqueue::Base` and reimplement the 
+`batch_size?` method to return a suggested batch size for a specific operation. 
+The following implements a batch_size of 100 for all queue entries: 
 
-    class Testqueue < Postqueue::Base
-      def batch_size(entity_type:,op:)
+    class Batchqueue < Postqueue::Base
+      def batch_size(op:)
         100
       end
     end
 
 ## Searchable via SQL
 
-In contrast to other queue implementations available for Rubyists this queue formats entries in a way that
-makes it possible to query the queue via SQL. On the other hand this queue also does not allow to 
-enqueue arbitrary entries as these others do.
+In contrast to other queue implementations available for Rubyists this queue formats
+entries in a way that makes it possible to query the queue via SQL. On the other 
+hand this queue also does not allow to enqueue arbitrary entries as these others do.
 
 ## Installation
 
