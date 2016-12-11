@@ -16,7 +16,6 @@ module Postqueue
     CREATE TABLE #{table_name} (
       id          SERIAL PRIMARY KEY,
       op          VARCHAR,
-      entity_type VARCHAR,
       entity_id   INTEGER NOT NULL DEFAULT 0,
       created_at  timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
       next_run_at timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),

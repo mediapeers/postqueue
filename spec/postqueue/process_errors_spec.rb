@@ -6,7 +6,7 @@ describe "::queue.process_one" do
   class E < RuntimeError; end
 
   before do
-    queue.enqueue op: "myop", entity_type: "mytype", entity_id: 12
+    queue.enqueue op: "mytype", entity_id: 12
   end
 
   context "block raises an exception" do

@@ -1,27 +1,29 @@
 module Postqueue
   class Base
-    # Enqueues an queue item. If the operation, as defined by op and entity_type, is idempotent
-    # (as determined by the Postqueue::Base#idempotent? method), and an entry with the same
-    # combination of attributes exists already, no entry will be added to the queue.
-    def enqueue(op:, entity_type:, entity_id:)
+    # Enqueues an queue item. If the operation is idempotent (as determined by the
+    # #idempotent? method), and an entry with the same combination of op and entity_id
+    # exists already, no entry will be added to the queue.
+    #
+    # [TODO] An optimized code path, talking directly to PG, might be faster by a factor of 4 or so.
+    def enqueue(op:, entity_id:)
       if entity_id.is_a?(Array)
-        enqueue_many(op: op, entity_type: entity_type, entity_ids: entity_id)
+        enqueue_many(op: op, entity_ids: entity_id)
+        return
       end
 
-      # An optimized code path, talking directly to PG, might be faster by a factor of 4 to 5 or so.
-      if idempotent?(op: op, entity_type: entity_type)
-        return if item_class.where(op: op, entity_type: entity_type, entity_id: entity_id).present?
+      if idempotent?(op: op) && item_class.where(op: op, entity_id: entity_id).present?
+        return
       end
 
-      item_class.create!(op: op, entity_type: entity_type, entity_id: entity_id)
+      item_class.create!(op: op, entity_id: entity_id)
     end
 
     private
 
-    def enqueue_many(op:, entity_type:, entity_ids:) #:nodoc:
+    def enqueue_many(op:, entity_ids:) #:nodoc:
       item_class.transaction do
         entity_ids.each do |entity_id|
-          enqueue(op: op, entity_type: entity_type, entity_id: entity_id)
+          enqueue(op: op, entity_id: entity_id)
         end
       end
     end
