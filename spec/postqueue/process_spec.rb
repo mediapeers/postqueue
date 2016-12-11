@@ -1,7 +1,14 @@
 require "spec_helper"
 
 describe "::queue.process" do
-  let(:queue) { Postqueue::Base.new }
+  class Testqueue < Postqueue::Base
+    def batch_size(op:)
+      _ = op
+      10
+    end
+  end
+
+  let(:queue) { Testqueue.new }
 
   describe "basics" do
     before do

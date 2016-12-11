@@ -4,14 +4,9 @@ module Postqueue
   class Base
     private
 
-    def idempotent?(op:)
-      _ = op
-      false
-    end
-
     def batch_size(op:)
       _ = op
-      10
+      1
     end
 
     def item_class

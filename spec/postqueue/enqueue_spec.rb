@@ -1,15 +1,8 @@
 require "spec_helper"
 
 describe "enqueuing" do
-  class TestQueue < Postqueue::Base
-    def idempotent?(op:)
-      op == "idempotent"
-    end
-  end
-
-  let(:queue) { TestQueue.new }
-
-  let(:item) { Postqueue::Item.first }
+  let(:queue) { Postqueue::Base.new }
+  let(:item)  { queue.items.first }
 
   context "when enqueueing entries" do
     before do
@@ -28,22 +21,37 @@ describe "enqueuing" do
     end
   end
 
-  context "when enqueueing identical idempotent entries" do
-    it "skips later duplicates" do
-      queue.enqueue op: "idempotent", entity_id: 12
-      queue.enqueue op: "idempotent", entity_id: 13
-      queue.enqueue op: "idempotent", entity_id: 12
-      queue.enqueue op: "idempotent", entity_id: 12
-      queue.enqueue op: "idempotent", entity_id: 12
+  context "when enqueueing identical duplicate entries" do
+    before do
+      queue.enqueue op: "duplicate", entity_id: 12, duplicate: duplicate
+      queue.enqueue op: "duplicate", entity_id: 13, duplicate: duplicate
+      queue.enqueue op: "duplicate", entity_id: 12, duplicate: duplicate
+      queue.enqueue op: "duplicate", entity_id: 12, duplicate: duplicate
+      queue.enqueue op: "duplicate", entity_id: 12, duplicate: duplicate
+      queue.enqueue op: "no-duplicate", entity_id: 13, duplicate: duplicate
+    end
 
-      expect(items.map(&:entity_id)).to eq([12, 13])
+    context "when duplicates are permitted" do
+      let(:duplicate) { true }
+
+      it "does not skip duplicates" do
+        expect(items.map(&:entity_id)).to eq([12, 13, 12, 12, 12, 13])
+      end
+    end
+
+    context "when duplicates are not permitted" do
+      let(:duplicate) { false }
+
+      it "skips later duplicates" do
+        expect(items.map(&:entity_id)).to eq([12, 13, 13])
+      end
     end
   end
 
   context "when enqueueing many entries" do
     it "adds all entries skipping duplicates" do
-      queue.enqueue op: "idempotent", entity_id: 12
-      queue.enqueue op: "idempotent", entity_id: [13, 12, 12, 13, 14]
+      queue.enqueue op: "duplicate", entity_id: 12, duplicate: false
+      queue.enqueue op: "duplicate", entity_id: [13, 12, 12, 13, 14], duplicate: false
       expect(items.map(&:entity_id)).to eq([12, 13, 14])
     end
   end
