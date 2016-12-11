@@ -28,43 +28,27 @@ module Postqueue
     end
 
     # The actual processing. Returns [ :ok, number-of-items ] or  [ :err, exception ]
-    def process_inside_transaction(entity_type:, op:, batch_size:, &_block)
+    def process_inside_transaction(entity_type:, op:, batch_size:, &block)
       batch = select_and_lock_batch(entity_type: entity_type, op: op, batch_size: batch_size)
 
-      first_match = batch.first
-      return [ :ok, nil ] unless first_match
-      op = batch.first.op
-      entity_type = batch.first.entity_type
+      match = batch.first
+      return [ :ok, nil ] unless match
 
       entity_ids = batch.map(&:entity_id)
-      batch_ids = batch.map(&:id)
-
-      queue_times = item_class.find_by_sql <<-SQL
-        SELECT extract('epoch' from AVG(now() - created_at)) AS avg,
-               extract('epoch' from MAX(now() - created_at)) AS max
-        FROM #{item_class.table_name} WHERE entity_id IN (#{entity_ids.join(',')})
-      SQL
-      queue_time = queue_times.first
-
-      # run callback.
-      result = [ op, entity_type, entity_ids ]
-
-      processing_time = Benchmark.realtime do
-        result = yield(*result) if block_given?
-      end
+      result, timing = run_callback(op: match.op, entity_type: match.entity_type, entity_ids: entity_ids, &block)
 
       # Depending on the result either reprocess or delete all items
       if result == false
-        postpone batch_ids
+        postpone batch.map(&:id)
       else
-        on_processing(op, entity_type, entity_ids, processing_time, queue_time)
-        item_class.where(id: batch_ids).delete_all
+        on_processing(match.op, match.entity_type, entity_ids, timing)
+        item_class.where(id: batch.map(&:id)).delete_all
       end
 
       [ :ok, result ]
     rescue => e
-      on_exception(e, op, entity_type, entity_ids)
-      postpone batch_ids
+      on_exception(e, match.op, match.entity_type, entity_ids)
+      postpone batch.map(&:id)
       [ :err, e ]
     end
 
