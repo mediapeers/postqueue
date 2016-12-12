@@ -18,6 +18,14 @@ module Postqueue
       process(op: op, batch_size: 1, &block)
     end
 
+    def process_until_empty(op: nil, batch_size: 100, &block)
+      processed = false
+      while process(op: op, batch_size: batch_size, &block) do
+        processed = true
+      end
+      processed
+    end
+
     private
 
     # The actual processing. Returns [ :ok, number-of-items ] or  [ :err, exception ]

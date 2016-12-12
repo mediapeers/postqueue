@@ -6,7 +6,7 @@ module Postqueue
     #
     # [TODO] An optimized code path, talking directly to PG, might be faster by a factor of 4 or so.
     def enqueue(op:, entity_id:, ignore_duplicates: false)
-      if entity_id.is_a?(Array)
+      if entity_id.is_a?(Enumerable)
         enqueue_many(op: op, entity_ids: entity_id, ignore_duplicates: ignore_duplicates)
         return
       end
