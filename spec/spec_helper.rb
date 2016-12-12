@@ -1,6 +1,3 @@
-path = File.expand_path("../../mpx/lib", __FILE__)
-$LOAD_PATH.unshift(path) unless $LOAD_PATH.include?(path)
-
 ENV["RACK_ENV"] = "test"
 
 require "rspec"
