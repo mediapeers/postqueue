@@ -57,4 +57,13 @@ describe "concurrency" do
     expect(processed_ids).to contain_exactly(*(1..cnt).to_a)
     expect(t4_runtime).to be < t0_runtime * 0.8
   end
+
+  it "enqueues many entries" do
+    cnt = 1000
+
+    queue = Postqueue::Base.new
+    benchmark "enqueuing #{cnt} ops" do
+      queue.enqueue op: "myop", entity_id: (1..cnt)
+    end
+  end
 end

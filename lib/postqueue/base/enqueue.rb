@@ -15,12 +15,12 @@ module Postqueue
         return
       end
 
-      item_class.create!(op: op, entity_id: entity_id)
+      item_class.insert_item op: op, entity_id: entity_id
     end
 
-    private
-
     def enqueue_many(op:, entity_ids:, ignore_duplicates:) #:nodoc:
+      entity_ids.uniq! if ignore_duplicates
+
       item_class.transaction do
         entity_ids.each do |entity_id|
           enqueue(op: op, entity_id: entity_id, ignore_duplicates: ignore_duplicates)
