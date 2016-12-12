@@ -9,6 +9,8 @@ describe "::queue.process" do
   end
 
   let(:queue) { Testqueue.new }
+  let(:items) { queue.items }
+  let(:item)  { queue.items.first }
 
   describe "basics" do
     before do

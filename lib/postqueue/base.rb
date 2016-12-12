@@ -2,6 +2,10 @@ module Postqueue
   Timing = Struct.new(:avg_queue_time, :max_queue_time, :total_processing_time, :processing_time)
 
   class Base
+    def items
+      item_class.all
+    end
+
     private
 
     def batch_size(op:)

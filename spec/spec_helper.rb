@@ -20,10 +20,6 @@ module Postqueue
   end
 end
 
-def items
-  Postqueue::Item.all
-end
-
 RSpec.configure do |config|
   config.run_all_when_everything_filtered = true
   config.filter_run focus: (ENV["CI"] != "true")

@@ -1,13 +1,30 @@
 # Postqueue
 
-The postqueue gem implements a simple to use queue on top of postgresql. Since this implementation is using the SKIP LOCKED
-syntax, it needs PostgresQL >= 9.5.
+The postqueue gem implements a simple to use queue on top of postgresql. Note that while 
+a queue like this is typically used in a job queueing scenario, this document does not 
+talk about jobs, it talks about **queue items**; it also does not schedule a job, 
+it **enqueues** an item, and it does not executes a job, it **processes** queue items.
 
-Why not using another queue implementation? postqueue comes with some extras:
+Why building an additional queue implementation? Compared to delayed_job or the other 
+usual suspects postqueue implements these features:
 
-- support for optimal handling of idempotent operations 
-- batch processing
-- searchable via SQL
+- The item structure is intentionally kept super simple: an item is described by an
+  `op` field - a string - and an `id` field, an integer. In a typical usecase a 
+  queue item would describe an operation on a specific entity, where `op` names 
+  both the operation and the entity type and the `id` field would describe the 
+  individual entity.
+
+- With such a simplistic item structure the queue itself can be searched or 
+  otherwise evaluated using SQL. This also allows for **skipping duplicate entries** 
+  when enqueuing items (managed via a duplicate: argument when enqueuing) and for 
+  **batch processing** multple items in one go. 
+
+- With data being kept in a Postgresql database processing provides **transactional semantics**: 
+  an item failing to process stays in the queue. Error handling is kept simpe to a 
+  strategy of rescheduling items up to a specific maximum number of processing attemps.
+
+Please be aware that postqueue is using the SELECT .. FOR UPDATE SKIP LOCKED Postgresql syntax, 
+and therefore needs at least PostgresQL >= 9.5.
 
 ## Basic usage
 
@@ -53,35 +70,33 @@ leads to a maximum postpone interval (currently up to 190 seconds).
 If the queue is empty or no matching queue entry could be found, `Postqueue.process` 
 returns nil.
 
-### process a single entry
+## Advanced usage
+
+### Concurrency guarantees
+
+Postqueue implements the following concurrency guarantees:
+
+- catastrophic DB failure and communication breakdown aside a queue item which is enqueued will eventually be processed successfully exactly once;
+- multiple consumers can work in parallel.
+
+### Processing a single entry
 
 Postqueue implements a shortcut to process only a single entry. Under the hood this 
 calls `Postqueue.process` with `batch_size` set to `1`:
 
-    Postqueue.process_one do |op, entity_ids|
+    queue.process_one do |op, entity_ids|
     end
 
 Note that even though `process_one` will only ever process a single entry the 
-`entity_ids` parameter to the block is still an array (holding a single ID 
+`entity_ids` parameter to the block is still an array (with a single ID entry 
 in that case).
 
-## idempotent operations
+## Batch processing
 
-Postqueue comes with simple support for idempotent operations: if an operation is deemed
-idempotent it is not enqueued again if it can be found in the queue already. Note that 
-a queue item will be created if another item is currently being processed.
+Often queue items can be batched together for a performant operation. To allow batch 
+processing for some items subclass `Postqueue::Base` and reimplement the `batch_size?` 
+method to suggested a batch size for a specific operation.
 
-    class Testqueue < Postqueue::Base
-      def idempotent?(entity_type:,op:)
-        op == "reindex"
-      end
-    end
-
-## batch processing
-
-Often queue items can be processed in batches for a better performance of the entire system. 
-To allow batch processing for some items subclass `Postqueue::Base` and reimplement the 
-`batch_size?` method to return a suggested batch size for a specific operation. 
 The following implements a batch_size of 100 for all queue entries: 
 
     class Batchqueue < Postqueue::Base
@@ -89,12 +104,6 @@ The following implements a batch_size of 100 for all queue entries:
         100
       end
     end
-
-## Searchable via SQL
-
-In contrast to other queue implementations available for Rubyists this queue formats
-entries in a way that makes it possible to query the queue via SQL. On the other 
-hand this queue also does not allow to enqueue arbitrary entries as these others do.
 
 ## Installation
 
@@ -116,15 +125,19 @@ Or install it yourself as:
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Make sure you have a local postgresql implementation of
-at least version 9.5. Add a `postqueue` user with a `postqueue` password, and create a `postqueue_test` database for it. 
-The script `./scripts/prepare_pg` can be helpful in establishing that.
+After checking out the repo, run `bin/setup` to install dependencies. Make sure you have 
+a local postgresql implementation of at least version 9.5. Add a `postqueue` user with 
+a `postqueue` password, and create a `postqueue_test` database for it. The script 
+`./scripts/prepare_pg` can be somewhat helpful in establishing that.
 
-Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive
+prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. 
 
-To release a new version, run `./scripts/release`, which will bump the version number, create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+To release a new version, run `./scripts/release`, which will bump the version number, 
+create a git tag for the version, push git commits and tags, and push the `.gem` file 
+to [rubygems.org](https://rubygems.org).
 
 ## Contributing
 

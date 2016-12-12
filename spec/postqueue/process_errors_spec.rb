@@ -2,6 +2,8 @@ require "spec_helper"
 
 describe "::queue.process_one" do
   let(:queue) { Postqueue::Base.new }
+  let(:items) { queue.items }
+  let(:item)  { queue.items.first }
 
   class E < RuntimeError; end
 
