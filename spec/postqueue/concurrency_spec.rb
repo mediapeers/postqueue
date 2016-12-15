@@ -9,7 +9,7 @@ describe "concurrency" do
 
   def benchmark(msg, &block)
     realtime = Benchmark.realtime(&block)
-    STDERR.puts "#{msg}: #{"%.3f msecs" % realtime}"
+    STDERR.puts "#{msg}: #{'%.3f secs' % realtime}"
     realtime
   end
 
@@ -17,10 +17,12 @@ describe "concurrency" do
 
   # Each runner writes the processed message into the LOG_FILE
   def runner
-    ActiveRecord::Base.connection_pool.with_connection do |conn|
+    ActiveRecord::Base.connection_pool.with_connection do |_conn|
       log = File.open(LOG_FILE, "a")
-      queue = Postqueue::Base.new
-      queue.process_until_empty { |op, entity_ids| sleep(0.0001); log.write "#{entity_ids.first}\n" }
+      queue = Postqueue.new
+      queue.process_until_empty do |_op, entity_ids|
+        sleep(0.0001); log.write "#{entity_ids.first}\n"
+      end
       log.close
     end
   rescue => e
@@ -30,7 +32,10 @@ describe "concurrency" do
   def run_scenario(cnt, n_threads)
     FileUtils.rm_rf LOG_FILE
 
-    queue = Postqueue::Base.new
+    queue = Postqueue.new do |queue|
+      # queue.default_batch_size = 10
+    end
+
     benchmark "enqueuing #{cnt} ops" do
       queue.enqueue op: "myop", entity_id: (1..cnt)
     end
@@ -39,7 +44,7 @@ describe "concurrency" do
       if n_threads == 0
         runner
       else
-        n_threads.times.map { Thread.new { runner } }.each(&:join)
+        Array.new(n_threads) { Thread.new { runner } }.each(&:join)
       end
     end
   end
@@ -61,7 +66,9 @@ describe "concurrency" do
   it "enqueues many entries" do
     cnt = 1000
 
-    queue = Postqueue::Base.new
+    queue = Postqueue.new do |queue|
+      # queue.default_batch_size = 10
+    end
     benchmark "enqueuing #{cnt} ops" do
       queue.enqueue op: "myop", entity_id: (1..cnt)
     end

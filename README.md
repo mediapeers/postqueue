@@ -29,7 +29,7 @@ and therefore needs at least PostgresQL >= 9.5.
 ## Basic usage
 
 ```ruby
-queue = PostgresQL::Base.new
+queue = Postqueue.new
 queue.enqueue op: "product/reindex", entity_id: [12,13,14,15]
 queue.process do |op, entity_ids|
   # note: entity_ids is always an Array of ids.
@@ -44,12 +44,11 @@ end
 
 The process call will select a number of queue items for processing. They will all have 
 the same `op` attribute. The callback will receive the `op` attribute and the `entity_ids`
-of all queue entries selected for processing. The `processing` method will return the 
-return value of the block.
+of all queue entries selected for processing. The `processing` method will return the number
+of processed items.
 
-If no callback is given the return value will be the `[op, entity_ids]` values
-that would have been sent to the block. This is highly unrecommended though, since 
-when using a block to do processing errors and exceptions can properly be dealt with.
+If no callback is given the matching items are only removed from the queue without
+any processing.
 
 Postqueue.process also accepts the following arguments:
 
@@ -62,22 +61,23 @@ Example:
       # only handle up to 10 "product/reindex" entries
     end
 
-If the block fails, by either returning `false` or by raising an exception the queue will
-postpone processing these entries by an increasing amount of time, up until 
-`Postqueue::MAX_ATTEMPTS` failed attempts. The current MAX_ATTEMPTS definition
-leads to a maximum postpone interval (currently up to 190 seconds).
+If the block raises an exception the queue will postpone processing these entries 
+by an increasing amount of time, up until `queue.max_attempts` failed attempts.
+That value defaults to 5.
 
 If the queue is empty or no matching queue entry could be found, `Postqueue.process` 
-returns nil.
+returns 0.
 
 ## Advanced usage
 
-### Concurrency guarantees
+### Concurrency
 
 Postqueue implements the following concurrency guarantees:
 
 - catastrophic DB failure and communication breakdown aside a queue item which is enqueued will eventually be processed successfully exactly once;
 - multiple consumers can work in parallel.
+
+Note that you should not share a Postqueue instance across threads.
 
 ### Processing a single entry
 
@@ -91,18 +91,37 @@ Note that even though `process_one` will only ever process a single entry the
 `entity_ids` parameter to the block is still an array (with a single ID entry 
 in that case).
 
+### Migrating
+
+Postqueue comes with migration helpers:
+
+    # set up a table for use with postqueue.
+    Postqueue.migrate!(table_name = "postqueue")
+
+    # set up a table for use with postqueue.
+    Postqueue.unmigrate!(table_name = "postqueue")
+
+You can also set up your own table, as long as it is compatible.
+
+To use a non-default table or a non-default database, change the `item_class`
+attribute of the queue:
+
+    Postqueue.new do |queue|
+      queue.item_class = MyItemClass
+    end
+
+`MyItemClass` should inherit from Postqueue::Item and use the same or a compatible database
+structure.
+
 ## Batch processing
 
 Often queue items can be batched together for a performant operation. To allow batch 
-processing for some items subclass `Postqueue::Base` and reimplement the `batch_size?` 
-method to suggested a batch size for a specific operation.
+processing for some items, configure the Postqueue to either set a `default_batch_size`
+or an operation-specific batch_size:
 
-The following implements a batch_size of 100 for all queue entries: 
-
-    class Batchqueue < Postqueue::Base
-      def batch_size(op:)
-        100
-      end
+    Postqueue.new do |queue|
+      queue.default_batch_size = 100
+      queue.batch_sizes["batchable"] = 10
     end
 
 ## Installation
@@ -120,8 +139,6 @@ And then execute:
 Or install it yourself as:
 
     $ gem install postqueue
-
-## Usage
 
 ## Development
 

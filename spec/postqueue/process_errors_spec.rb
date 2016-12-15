@@ -1,9 +1,16 @@
 require "spec_helper"
 
 describe "::queue.process_one" do
-  let(:queue) { Postqueue::Base.new }
-  let(:items) { queue.items }
-  let(:item)  { queue.items.first }
+  let(:queue) do
+    Postqueue.new do |queue|
+      queue.default_batch_size = 1
+      queue.batch_sizes["batchable"] = 10
+      queue.batch_sizes["other-batchable"] = 10
+    end
+  end
+
+  let(:items) { queue.item_class.all }
+  let(:item)  { queue.item_class.first }
 
   class E < RuntimeError; end
 
@@ -29,28 +36,10 @@ describe "::queue.process_one" do
     end
   end
 
-  context "block returns false" do
-    before do
-      @result = queue.process_one { |_op, _type, _ids| false }
-    end
-
-    it "returns false" do
-      expect(@result).to be false
-    end
-
-    it "keeps the item in the queue" do
-      expect(items.map(&:entity_id)).to contain_exactly(12)
-    end
-
-    it "increments the failed_attempt count" do
-      expect(items.map(&:failed_attempts)).to contain_exactly(1)
-    end
-  end
-
   context "failed_attempts reached MAX_ATTEMPTS" do
     before do
-      expect(Postqueue::MAX_ATTEMPTS).to be >= 3
-      items.update_all(failed_attempts: Postqueue::MAX_ATTEMPTS)
+      expect(queue.max_attemps).to be >= 3
+      items.update_all(failed_attempts: queue.max_attemps)
 
       @called_block = 0
       @result = queue.process_one do
@@ -63,8 +52,8 @@ describe "::queue.process_one" do
       expect(@called_block).to eq(0)
     end
 
-    it "returns nil" do
-      expect(@result).to eq(nil)
+    it "returns 0" do
+      expect(@result).to eq(0)
     end
 
     it "does not remove the item" do
@@ -72,7 +61,7 @@ describe "::queue.process_one" do
     end
 
     it "does not increment the failed_attempts count" do
-      expect(items.first.failed_attempts).to eq(Postqueue::MAX_ATTEMPTS)
+      expect(items.first.failed_attempts).to eq(queue.max_attemps)
     end
   end
 end

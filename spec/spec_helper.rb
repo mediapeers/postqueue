@@ -11,11 +11,7 @@ end
 require "postqueue"
 require "./spec/support/configure_active_record"
 
-module Postqueue
-  def self.logger
-    @logger ||= Logger.new(File.open("log/test.log", "a"))
-  end
-end
+Postqueue.logger = Logger.new(File.open("log/test.log", "a"))
 
 RSpec.configure do |config|
   config.run_all_when_everything_filtered = true

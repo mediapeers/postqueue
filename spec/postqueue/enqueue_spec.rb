@@ -1,9 +1,16 @@
 require "spec_helper"
 
 describe "enqueuing" do
-  let(:queue) { Postqueue::Base.new }
-  let(:items) { queue.items }
-  let(:item)  { queue.items.first }
+  let(:queue) do
+    Postqueue.new do |queue|
+      queue.default_batch_size = 1
+      queue.batch_sizes["batchable"] = 10
+      queue.batch_sizes["other-batchable"] = 10
+    end
+  end
+
+  let(:items) { queue.item_class.all }
+  let(:item)  { queue.item_class.first }
 
   context "when enqueueing entries" do
     before do

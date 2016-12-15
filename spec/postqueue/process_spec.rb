@@ -1,16 +1,16 @@
 require "spec_helper"
 
 describe "::queue.process" do
-  class Testqueue < Postqueue::Base
-    def batch_size(op:)
-      _ = op
-      10
+  let(:queue) do
+    Postqueue.new do |queue|
+      queue.default_batch_size = 1
+      queue.batch_sizes["batchable"] = 10
+      queue.batch_sizes["other-batchable"] = 10
     end
   end
 
-  let(:queue) { Testqueue.new }
-  let(:items) { queue.items }
-  let(:item)  { queue.items.first }
+  let(:items) { queue.item_class.all }
+  let(:item)  { queue.item_class.first }
 
   describe "basics" do
     before do
@@ -21,7 +21,7 @@ describe "::queue.process" do
 
     it "processes the first entry" do
       r = queue.process_one
-      expect(r).to eq(["myop", [12]])
+      expect(r).to eq(1)
       expect(items.map(&:entity_id)).to contain_exactly(13, 14)
     end
 
@@ -29,53 +29,55 @@ describe "::queue.process" do
       queue.enqueue(op: "otherop", entity_id: 112)
 
       r = queue.process_one(op: "otherop")
-      expect(r).to eq(["otherop", [112]])
+      expect(r).to eq(1)
       expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
     end
 
-    it "yields a block and returns its return value" do
+    it "yields a block and returns the processed entries" do
       queue.enqueue op: "otherop", entity_id: 112
+      called = false
       r = queue.process_one(op: "otherop") do |op, ids|
         expect(op).to eq("otherop")
         expect(ids).to eq([112])
-        "yihaa"
+        called = true
       end
 
-      expect(r).to eq("yihaa")
+      expect(called).to eq(true)
       expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
+      expect(r).to eq(1)
     end
   end
 
   context "when having entries with different entity_type and op" do
     before do
-      queue.enqueue op: "myop", entity_id: 12
-      queue.enqueue op: "myop", entity_id: 13
-      queue.enqueue op: "otherop", entity_id: 14
-      queue.enqueue op: "myop", entity_id: 15
-      queue.enqueue op: "otherop", entity_id: 16
+      queue.enqueue op: "batchable", entity_id: 12
+      queue.enqueue op: "batchable", entity_id: 13
+      queue.enqueue op: "other-batchable", entity_id: 14
+      queue.enqueue op: "batchable", entity_id: 15
+      queue.enqueue op: "other-batchable", entity_id: 16
     end
 
-    it "processes one entries" do
+    it "processes one matching entry with batch_size 1" do
       r = queue.process batch_size: 1
-      expect(r).to eq(["myop", [12]])
+      expect(r).to eq(1)
       expect(items.map(&:entity_id)).to contain_exactly(13, 14, 15, 16)
     end
 
-    it "processes two entries" do
+    it "processes two matching entries" do
       r = queue.process batch_size: 2
-      expect(r).to eq(["myop", [12, 13]])
+      expect(r).to eq(2)
       expect(items.map(&:entity_id)).to contain_exactly(14, 15, 16)
     end
 
-    it "processes only matching entries when asked for more" do
+    it "processes all matching entries" do
       r = queue.process
-      expect(r).to eq(["myop", [12, 13, 15]])
+      expect(r).to eq(3)
       expect(items.map(&:entity_id)).to contain_exactly(14, 16)
     end
 
     it "honors search conditions" do
-      r = queue.process(op: "otherop")
-      expect(r).to eq(["otherop", [14, 16]])
+      r = queue.process(op: "other-batchable")
+      expect(r).to eq(2)
       expect(items.map(&:entity_id)).to contain_exactly(12, 13, 15)
     end
   end
