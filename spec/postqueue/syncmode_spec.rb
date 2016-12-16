@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe "enqueuing" do
+describe "sync_processing" do
   let(:callback_invocations) { @callback_invocations ||= [] }
 
   before :all do

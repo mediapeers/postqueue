@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe "enqueuing" do
+describe "wildcard processing" do
   let(:callback_invocations) { @callback_invocations ||= [] }
 
   let(:queue) do

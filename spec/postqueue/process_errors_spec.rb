@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe "::queue.process_one" do
+describe "error handling" do
   let(:queue) do
     Postqueue.new do |queue|
       queue.batch_sizes["batchable"] = 10

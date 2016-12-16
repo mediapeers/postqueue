@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe "enqueuing" do
+describe "idempotent operations" do
   let(:queue) do
     Postqueue.new do |queue|
       queue.batch_sizes["batchable"] = 10

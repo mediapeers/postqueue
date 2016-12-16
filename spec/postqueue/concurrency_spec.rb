@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe "concurrency" do
+describe "concurrency tests" do
   # -- helper methods ---------------------------------------------------------
 
   def processed_ids

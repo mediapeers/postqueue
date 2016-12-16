@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe "::queue.process" do
+describe "processing" do
   let(:processed_events) do
     @processed_events ||= []
   end
