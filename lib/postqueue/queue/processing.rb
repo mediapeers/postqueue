@@ -39,6 +39,14 @@ module Postqueue
       on_processing(match.op, entity_ids, timing)
       item_class.where(id: items.map(&:id)).delete_all
 
+      # even though we try not to enqueue duplicates we cannot guarantee that,
+      # since concurrent enqueue transactions might still insert duplicates.
+      # That's why we explicitely remove all non-failed duplicates here.
+      if ignore_duplicates?(match.op)
+        duplicates = select_and_lock_duplicates(op: match.op, entity_ids: entity_ids)
+        item_class.where(id: duplicates.map(&:id)).delete_all unless duplicates.empty?
+      end
+
       entity_ids.length
     rescue => e
       on_exception(e, match.op, entity_ids)

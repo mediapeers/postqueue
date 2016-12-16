@@ -30,7 +30,7 @@ module Postqueue
     # passed in here that one is used instead.
     #
     # Returns an array of item objects.
-    def select_and_lock_batch(op:, max_batch_size:, &_block)
+    def select_and_lock_batch(op:, max_batch_size:)
       relation = item_class.all
       relation = relation.where(op: op) if op
 
@@ -42,6 +42,14 @@ module Postqueue
 
       batch_relation = relation.where(op: match.op)
       select_and_lock(batch_relation, limit: batch_size)
+    end
+
+    def select_and_lock_duplicates(op:, entity_ids:)
+      raise ArgumentError, "Missing op argument" unless op
+      return [] if entity_ids.empty?
+
+      relation = item_class.where(op: op, entity_id: entity_ids)
+      select_and_lock(relation, limit: nil)
     end
 
     def calculate_batch_size(op:, max_batch_size:)

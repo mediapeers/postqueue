@@ -27,8 +27,20 @@ module Postqueue
       batch_sizes[op] || default_batch_size || 1
     end
 
-    def enqueue(op:, entity_id:, ignore_duplicates: false)
-      item_class.enqueue op: op, entity_id: entity_id, ignore_duplicates: ignore_duplicates
+    def _skip_duplicates
+      @_skip_duplicates ||= {}
+    end
+
+    def ignore_duplicates?(op)
+      _skip_duplicates[op] || _skip_duplicates['*'] || false
+    end
+
+    def skip_duplicates(op, flag = true)
+      _skip_duplicates[op] = flag
+    end
+
+    def enqueue(op:, entity_id:)
+      item_class.enqueue op: op, entity_id: entity_id, ignore_duplicates: ignore_duplicates?(op)
     end
   end
 end
