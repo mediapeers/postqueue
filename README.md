@@ -1,5 +1,7 @@
 # Postqueue
 
+## Intro
+
 The postqueue gem implements a simple to use queue on top of postgresql. Note that while 
 a queue like this is typically used in a job queueing scenario, this document does not 
 talk about jobs, it talks about **queue items**; it also does not schedule a job, 
@@ -77,18 +79,27 @@ Postqueue implements the following concurrency guarantees:
 - catastrophic DB failure and communication breakdown aside a queue item which is enqueued will eventually be processed successfully exactly once;
 - multiple consumers can work in parallel.
 
-Note that you should not share a Postqueue instance across threads.
+Note that you should not share a Postqueue ruby object across threads - instead you should create
+process objects with the identical configuration.
+
+### Idempotent operations
+
+When enqueueing items duplicate idempotent operations are not enqueued. Whether or not an operation
+should be considered idempotent is defined when configuring the queue:
+
+     Postqueue.new do |queue|
+       queue.idempotent_operation "idempotent"
+     end
 
 ### Processing a single entry
 
 Postqueue implements a shortcut to process only a single entry. Under the hood this 
 calls `Postqueue.process` with `batch_size` set to `1`:
 
-    queue.process_one do |op, entity_ids|
-    end
+    queue.process_one
 
 Note that even though `process_one` will only ever process a single entry the 
-`entity_ids` parameter to the block is still an array (with a single ID entry 
+`entity_ids` parameter to the callback is still an array (with a single ID entry 
 in that case).
 
 ### Migrating
@@ -122,6 +133,19 @@ or an operation-specific batch_size:
     Postqueue.new do |queue|
       queue.default_batch_size = 100
       queue.batch_sizes["batchable"] = 10
+    end
+
+## Test mode
+
+During unit tests it is likely preferrable to process queue items in synchronous fashion (i.e. as they come in).
+You can enable this mode via:
+
+    Postqueue.async_processing = false
+
+You can also enable this on a queue-by-queue base via:
+
+    Postqueue.new do |queue|
+      queue.async_processing = false
     end
 
 ## Installation
