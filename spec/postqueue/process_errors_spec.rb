@@ -15,12 +15,15 @@ describe "::queue.process_one" do
   class E < RuntimeError; end
 
   before do
+    queue.on "mytype" do
+      raise E
+    end
     queue.enqueue op: "mytype", entity_id: 12
   end
 
   context "block raises an exception" do
     before do
-      expect { queue.process_one { |_op, _type, _ids| raise E } }.to raise_error(E)
+      expect { queue.process_one }.to raise_error(E)
     end
 
     it "reraises the exception" do
@@ -40,20 +43,15 @@ describe "::queue.process_one" do
     before do
       expect(queue.max_attemps).to be >= 3
       items.update_all(failed_attempts: queue.max_attemps)
-
-      @called_block = 0
-      @result = queue.process_one do
-        @called_block += 1
-        false
-      end
+      queue.process_one
     end
 
     it "does not call the block" do
-      expect(@called_block).to eq(0)
+      expect { queue.process_one }.not_to raise_error
     end
 
     it "returns 0" do
-      expect(@result).to eq(0)
+      expect(queue.process_one).to eq(0)
     end
 
     it "does not remove the item" do

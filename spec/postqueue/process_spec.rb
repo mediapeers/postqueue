@@ -1,11 +1,19 @@
 require "spec_helper"
 
 describe "::queue.process" do
+  let(:processed_events) do
+    @processed_events ||= []
+  end
+
   let(:queue) do
     Postqueue.new do |queue|
       queue.default_batch_size = 1
       queue.batch_sizes["batchable"] = 10
       queue.batch_sizes["other-batchable"] = 10
+
+      queue.on '*' do |op, entity_ids|
+        processed_events << [ op, entity_ids ]
+      end
     end
   end
 
@@ -36,15 +44,13 @@ describe "::queue.process" do
     it "yields a block and returns the processed entries" do
       queue.enqueue op: "otherop", entity_id: 112
       called = false
-      r = queue.process_one(op: "otherop") do |op, ids|
-        expect(op).to eq("otherop")
-        expect(ids).to eq([112])
-        called = true
-      end
+      queue.process_one(op: "otherop")
+      
+      op, ids = processed_events.first
+      expect(op).to eq("otherop")
+      expect(ids).to eq([112])
 
-      expect(called).to eq(true)
       expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
-      expect(r).to eq(1)
     end
   end
 
