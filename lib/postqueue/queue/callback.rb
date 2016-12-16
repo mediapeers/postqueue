@@ -14,7 +14,7 @@ module Postqueue
       @callbacks ||= {}
     end
 
-    def callback_for(op: op)
+    def callback_for(op:)
       callbacks[op] || callbacks['*']
     end
 
@@ -31,7 +31,7 @@ module Postqueue
       end
     end
 
-    def on_unregistered_op(op: op, entity_ids: entity_ids)
+    def on_unregistered_op(op:, entity_ids:)
       raise UnknownOperation.new(op: op, entity_ids: entity_ids)
     end
 
