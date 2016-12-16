@@ -14,11 +14,18 @@ module Postqueue
     # maximum number of processing attempts.
     attr_reader :max_attemps
 
+    def async_processing?
+      @async_processing
+    end
+
+    attr_writer :async_processing
+
     def initialize(&block)
       @batch_sizes = {}
       @item_class = ::Postqueue::Item
       @default_batch_size = 1
       @max_attemps = 5
+      @async_processing = Postqueue.async_processing?
 
       yield self if block
     end
@@ -27,20 +34,23 @@ module Postqueue
       batch_sizes[op] || default_batch_size || 1
     end
 
-    def _skip_duplicates
-      @_skip_duplicates ||= {}
+    def idempotent_operations
+      @idempotent_operations ||= {}
     end
 
-    def ignore_duplicates?(op)
-      _skip_duplicates[op] || _skip_duplicates['*'] || false
+    def idempotent_operation?(op)
+      idempotent_operations.fetch(op) { idempotent_operations.fetch('*', false)  }
     end
 
-    def skip_duplicates(op, flag = true)
-      _skip_duplicates[op] = flag
+    def idempotent_operation(op, flag = true)
+      idempotent_operations[op] = flag
     end
 
     def enqueue(op:, entity_id:)
-      item_class.enqueue op: op, entity_id: entity_id, ignore_duplicates: ignore_duplicates?(op)
+      enqueued_items = item_class.enqueue op: op, entity_id: entity_id, ignore_duplicates: idempotent_operation?(op)
+      return unless enqueued_items > 0
+
+      process_until_empty(op: op) unless async_processing?
     end
   end
 end

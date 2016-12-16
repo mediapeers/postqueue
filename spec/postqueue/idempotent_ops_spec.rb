@@ -3,9 +3,8 @@ require "spec_helper"
 describe "enqueuing" do
   let(:queue) do
     Postqueue.new do |queue|
-      queue.default_batch_size = 1
       queue.batch_sizes["batchable"] = 10
-      queue.skip_duplicates "duplicate"
+      queue.idempotent_operation "idempotent"
     end
   end
 
@@ -14,11 +13,11 @@ describe "enqueuing" do
 
   context "when enqueueing many entries" do
     before do
-      queue.enqueue op: "duplicate", entity_id: 12
-      queue.enqueue op: "duplicate", entity_id: 13
-      queue.enqueue op: "duplicate", entity_id: 12
-      queue.enqueue op: "duplicate", entity_id: 12
-      queue.enqueue op: "duplicate", entity_id: 12
+      queue.enqueue op: "idempotent", entity_id: 12
+      queue.enqueue op: "idempotent", entity_id: 13
+      queue.enqueue op: "idempotent", entity_id: 12
+      queue.enqueue op: "idempotent", entity_id: 12
+      queue.enqueue op: "idempotent", entity_id: 12
       queue.enqueue op: "no-duplicate", entity_id: 14
       queue.enqueue op: "no-duplicate", entity_id: 14
     end
@@ -29,16 +28,16 @@ describe "enqueuing" do
     end
 
     it "skips duplicates" do
-      entity_ids = items.select { |i| i.op == "duplicate" }.map(&:entity_id)
+      entity_ids = items.select { |i| i.op == "idempotent" }.map(&:entity_id)
       expect(entity_ids).to eq([12, 13])
     end
   end
 
   context "when enqueueing many entries" do
     it "skips duplicates in entries" do
-      queue.enqueue op: "duplicate", entity_id: 12
-      queue.enqueue op: "duplicate", entity_id: [13, 12, 12, 13, 14]
-      queue.enqueue op: "duplicate", entity_id: 14
+      queue.enqueue op: "idempotent", entity_id: 12
+      queue.enqueue op: "idempotent", entity_id: [13, 12, 12, 13, 14]
+      queue.enqueue op: "idempotent", entity_id: 14
       expect(items.map(&:entity_id)).to eq([12, 13, 14])
     end
   end
@@ -47,10 +46,10 @@ describe "enqueuing" do
     let(:callback_invocations) { @callback_invocations ||= [] }
 
     before do
-      queue.enqueue op: "duplicate", entity_id: 12
-      queue.item_class.insert_item(op: "duplicate", entity_id: 12)
+      queue.enqueue op: "idempotent", entity_id: 12
+      queue.item_class.insert_item(op: "idempotent", entity_id: 12)
 
-      queue.on "duplicate" do |op, entity_ids|
+      queue.on "idempotent" do |op, entity_ids|
         callback_invocations << [ op, entity_ids ]
       end
       queue.process

@@ -3,7 +3,6 @@ require "spec_helper"
 describe "::queue.process_one" do
   let(:queue) do
     Postqueue.new do |queue|
-      queue.default_batch_size = 1
       queue.batch_sizes["batchable"] = 10
       queue.batch_sizes["other-batchable"] = 10
     end

@@ -42,7 +42,7 @@ module Postqueue
       # even though we try not to enqueue duplicates we cannot guarantee that,
       # since concurrent enqueue transactions might still insert duplicates.
       # That's why we explicitely remove all non-failed duplicates here.
-      if ignore_duplicates?(match.op)
+      if idempotent_operation?(match.op)
         duplicates = select_and_lock_duplicates(op: match.op, entity_ids: entity_ids)
         item_class.where(id: duplicates.map(&:id)).delete_all unless duplicates.empty?
       end
