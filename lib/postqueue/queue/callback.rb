@@ -1,4 +1,18 @@
 module Postqueue
+  class MissingHandler < RuntimeError
+    attr_reader :queue, :op, :entity_ids
+
+    def initialize(queue:, op:, entity_ids:)
+      @queue = queue
+      @op = op
+      @entity_ids = entity_ids
+    end
+
+    def to_s
+      "#{queue.item_class.table_name}: Unknown operation #{op} with #{entity_ids.count} entities"
+    end
+  end
+
   class Queue
     Timing = Struct.new(:avg_queue_time, :max_queue_time, :total_processing_time, :processing_time)
 
@@ -18,21 +32,8 @@ module Postqueue
       callbacks[op] || callbacks['*']
     end
 
-    class UnknownOperation < RuntimeError
-      attr_reader :op, :entity_ids
-
-      def initialize(op:, entity_ids:)
-        @op = op
-        @entity_ids = entity_ids
-      end
-
-      def to_s
-        raise "Unknown operation #{self.op} with #{entity_ids.inspect} entities"
-      end
-    end
-
-    def on_unregistered_op(op:, entity_ids:)
-      raise UnknownOperation.new(op: op, entity_ids: entity_ids)
+    def on_missing_handler(op:, entity_ids:)
+      raise MissingHandler.new(queue: self, op: op, entity_ids: entity_ids)
     end
 
     private
@@ -49,7 +50,7 @@ module Postqueue
         if callback = callback_for(op: op)
           callback.call(op, entity_ids)
         else
-          on_unregistered_op(op: op, entity_ids: entity_ids)
+          on_missing_handler(op: op, entity_ids: entity_ids)
         end
       end
 

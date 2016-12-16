@@ -13,34 +13,33 @@ describe "error handling" do
 
   class E < RuntimeError; end
 
-  before do
-    queue.on "mytype" do
-      raise E
+  context "when handler raises an exception" do
+    before do
+      queue.on "mytype" do raise E end
+      queue.enqueue op: "mytype", entity_id: 12
     end
-    queue.enqueue op: "mytype", entity_id: 12
+
+    it "reraises the exception, keeps the item in the queue and increments the failed_attempt count" do
+      expect { queue.process_one }.to raise_error(E)
+      expect(items.map(&:entity_id)).to contain_exactly(12)
+      expect(items.map(&:failed_attempts)).to contain_exactly(1)
+    end
   end
 
-  context "block raises an exception" do
+  context "when no handler can be found" do
     before do
-      expect { queue.process_one }.to raise_error(E)
+      queue.enqueue op: "mytype", entity_id: 12
     end
 
-    it "reraises the exception" do
-      # checked in before block
-    end
-
-    it "keeps the item in the queue" do
-      expect(items.map(&:entity_id)).to contain_exactly(12)
-    end
-
-    it "increments the failed_attempt count" do
-      expect(items.map(&:failed_attempts)).to contain_exactly(1)
+    it "raises a MissingHandler exception" do
+      expect { queue.process_one }.to raise_error(::Postqueue::MissingHandler)
     end
   end
 
   context "failed_attempts reached MAX_ATTEMPTS" do
     before do
       expect(queue.max_attemps).to be >= 3
+      queue.enqueue op: "mytype", entity_id: 12
       items.update_all(failed_attempts: queue.max_attemps)
       queue.process_one
     end
