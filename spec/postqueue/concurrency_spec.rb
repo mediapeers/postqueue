@@ -20,7 +20,7 @@ describe "concurrency tests" do
     ActiveRecord::Base.connection_pool.with_connection do |_conn|
       log = File.open(LOG_FILE, "a")
       queue = Postqueue.new
-      queue.on '*' do |_op, entity_ids|
+      queue.on "*" do |_op, entity_ids|
         sleep(0.0001); log.write "#{entity_ids.first}\n"
       end
       queue.process_until_empty

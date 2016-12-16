@@ -11,7 +11,7 @@ module Postqueue
     end
 
     # processes a single entry
-    def process_one(op: nil, &block)
+    def process_one(op: nil)
       process(op: op, batch_size: 1)
     end
 

@@ -25,7 +25,7 @@ module Postqueue
     # passed in, that one is chosen as a filter condition, otherwise the op value
     # of the first queue entry is used insteatd.
     #
-    # This method will at maximum select and lock \a batch_size items. 
+    # This method will at maximum select and lock \a batch_size items.
     # If the \a batch_size configured in the queue is smaller than the value
     # passed in here that one is used instead.
     #

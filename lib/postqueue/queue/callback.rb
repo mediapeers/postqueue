@@ -29,11 +29,11 @@ module Postqueue
     end
 
     def callback_for(op:)
-      callbacks[op] || callbacks['*']
+      callbacks[op] || callbacks["*"]
     end
 
     def on_missing_handler(op:, entity_ids:)
-      raise MissingHandler.new(queue: self, op: op, entity_ids: entity_ids)
+      raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
     end
 
     private

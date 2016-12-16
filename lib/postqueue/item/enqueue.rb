@@ -15,7 +15,7 @@ module Postqueue
       end
 
       insert_item op: op, entity_id: entity_id
-      return 1
+      1
     end
 
     def self.enqueue_many(op:, entity_ids:, ignore_duplicates:) #:nodoc:

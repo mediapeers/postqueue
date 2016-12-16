@@ -39,7 +39,7 @@ module Postqueue
     end
 
     def idempotent_operation?(op)
-      idempotent_operations.fetch(op) { idempotent_operations.fetch('*', false)  }
+      idempotent_operations.fetch(op) { idempotent_operations.fetch("*", false) }
     end
 
     def idempotent_operation(op, flag = true)

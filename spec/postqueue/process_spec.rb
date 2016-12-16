@@ -10,7 +10,7 @@ describe "processing" do
       queue.batch_sizes["batchable"] = 10
       queue.batch_sizes["other-batchable"] = 10
 
-      queue.on '*' do |op, entity_ids|
+      queue.on "*" do |op, entity_ids|
         processed_events << [ op, entity_ids ]
       end
     end
@@ -44,7 +44,7 @@ describe "processing" do
       queue.enqueue op: "otherop", entity_id: 112
       called = false
       queue.process_one(op: "otherop")
-      
+
       op, ids = processed_events.first
       expect(op).to eq("otherop")
       expect(ids).to eq([112])
