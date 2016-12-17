@@ -16,9 +16,27 @@ module Postqueue
   class Queue
     Timing = Struct.new(:avg_queue_time, :max_queue_time, :total_processing_time, :processing_time)
 
-    def on(op, &block)
-      raise ArgumentError, "Invalid op #{op.inspect}, must be a string" unless op.is_a?(String)
+    def assert_valid_op!(op)
+      return if op == :missing_handler
+      return if op.is_a?(String)
+
+      raise ArgumentError, "Invalid op #{op.inspect}, must be a string"
+    end
+
+    def on(op, batch_size: nil, idempotent: nil, &block)
+      assert_valid_op! op
       callbacks[op] = block
+
+      if batch_size
+        raise ArgumentError, "Can't set per-op batchsize for op '*'" if op == "*"
+        @batch_sizes[op] = batch_size
+      end
+
+      unless idempotent.nil?
+        raise ArgumentError, "Can't idempotent for default op '*'" if op == "*"
+        @idempotent_operations[op] = idempotent
+      end
+
       self
     end
 
@@ -32,10 +50,6 @@ module Postqueue
       callbacks[op] || callbacks["*"]
     end
 
-    def on_missing_handler(op:, entity_ids:)
-      raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
-    end
-
     private
 
     def run_callback(op:, entity_ids:)
@@ -47,11 +61,8 @@ module Postqueue
       queue_time = queue_times.first
 
       total_processing_time = Benchmark.realtime do
-        if callback = callback_for(op: op)
-          callback.call(op, entity_ids)
-        else
-          on_missing_handler(op: op, entity_ids: entity_ids)
-        end
+        callback = callback_for(op: op) || callbacks.fetch(:missing_handler)
+        callback.call(op, entity_ids)
       end
 
       Timing.new(queue_time.avg, queue_time.max, total_processing_time, total_processing_time / entity_ids.length)

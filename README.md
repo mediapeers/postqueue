@@ -33,15 +33,11 @@ and therefore needs at least PostgresQL >= 9.5.
 ```ruby
 queue = Postqueue.new
 queue.enqueue op: "product/reindex", entity_id: [12,13,14,15]
-queue.process do |op, entity_ids|
-  # note: entity_ids is always an Array of ids.
-  case op
-  when "product/reindex"
-    Product.index_many(Product.where(id: entity_ids))
-  else
-    raise "Unsupported op: #{op}"
-  end
+queue.on "product/reindex" do |op, entity_ids|
+  Product.index_many(Product.where(id: entity_ids))
 end
+
+queue.process
 ```
 
 The process call will select a number of queue items for processing. They will all have 
@@ -88,7 +84,9 @@ When enqueueing items duplicate idempotent operations are not enqueued. Whether 
 should be considered idempotent is defined when configuring the queue:
 
      Postqueue.new do |queue|
-       queue.idempotent_operation "idempotent"
+       queue.on "idempotent", idempotent: true do ]op, entity_ids|
+         # .. handle queue item
+       end
      end
 
 ### Processing a single entry
@@ -132,7 +130,9 @@ or an operation-specific batch_size:
 
     Postqueue.new do |queue|
       queue.default_batch_size = 100
-      queue.batch_sizes["batchable"] = 10
+      queue.on "batchable", batch_size: 10 do
+        ...
+      end
     end
 
 ## Test mode

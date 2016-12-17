@@ -3,8 +3,7 @@ require "spec_helper"
 describe "idempotent operations" do
   let(:queue) do
     Postqueue.new do |queue|
-      queue.batch_sizes["batchable"] = 10
-      queue.idempotent_operation "idempotent"
+      queue.on "idempotent", idempotent: true
     end
   end
 

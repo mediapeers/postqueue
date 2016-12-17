@@ -49,9 +49,9 @@ module Postqueue
 
       entity_ids.length
     rescue => e
-      on_exception(e, match.op, entity_ids)
       item_class.postpone items.map(&:id)
-      raise
+      log_exception(e, match.op, entity_ids)
+      on_exception.call(e, match.op, entity_ids)
     end
   end
 end

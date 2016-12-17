@@ -3,8 +3,8 @@ require "spec_helper"
 describe "error handling" do
   let(:queue) do
     Postqueue.new do |queue|
-      queue.batch_sizes["batchable"] = 10
-      queue.batch_sizes["other-batchable"] = 10
+      queue.on "batchable", batch_size: 10
+      queue.on "other-batchable", batch_size: 10
     end
   end
 

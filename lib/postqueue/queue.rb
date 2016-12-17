@@ -8,9 +8,6 @@ module Postqueue
     # for an operation.
     attr_accessor :default_batch_size
 
-    # batch size for a given op
-    attr_reader :batch_sizes
-
     # maximum number of processing attempts.
     attr_reader :max_attemps
 
@@ -26,24 +23,26 @@ module Postqueue
       @default_batch_size = 1
       @max_attemps = 5
       @async_processing = Postqueue.async_processing?
+      @idempotent_operations = {}
+      @batch_sizes = {}
+
+      on :missing_handler do |op, entity_ids|
+        raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
+      end
+
+      on_exception do |e, _, _|
+        e.send :raise
+      end
 
       yield self if block
     end
 
     def batch_size(op:)
-      batch_sizes[op] || default_batch_size || 1
-    end
-
-    def idempotent_operations
-      @idempotent_operations ||= {}
+      @batch_sizes[op] || default_batch_size || 1
     end
 
     def idempotent_operation?(op)
-      idempotent_operations.fetch(op) { idempotent_operations.fetch("*", false) }
-    end
-
-    def idempotent_operation(op, flag = true)
-      idempotent_operations[op] = flag
+      @idempotent_operations.fetch(op) { @idempotent_operations.fetch("*", false) }
     end
 
     def enqueue(op:, entity_id:)

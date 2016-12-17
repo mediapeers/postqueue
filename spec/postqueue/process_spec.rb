@@ -7,8 +7,8 @@ describe "processing" do
 
   let(:queue) do
     Postqueue.new do |queue|
-      queue.batch_sizes["batchable"] = 10
-      queue.batch_sizes["other-batchable"] = 10
+      queue.on "batchable", batch_size: 10
+      queue.on "other-batchable", batch_size: 10
 
       queue.on "*" do |op, entity_ids|
         processed_events << [ op, entity_ids ]
@@ -40,7 +40,7 @@ describe "processing" do
       expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
     end
 
-    it "yields a block and returns the processed entries" do
+    it "calls the registered handler and returns the processed entries" do
       queue.enqueue op: "otherop", entity_id: 112
       called = false
       queue.process_one(op: "otherop")

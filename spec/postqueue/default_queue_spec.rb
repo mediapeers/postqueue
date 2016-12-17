@@ -8,8 +8,8 @@ describe "default_queue" do
   let(:processed_events) { @processed_events ||= [] }
 
   before do
-    queue.batch_sizes["batchable"] = 10
-    queue.batch_sizes["other-batchable"] = 10
+    queue.on "batchable", batch_size: 10
+    queue.on "other-batchable", batch_size: 10
 
     queue.on "*" do |op, entity_ids|
       processed_events << [ op, entity_ids ]
