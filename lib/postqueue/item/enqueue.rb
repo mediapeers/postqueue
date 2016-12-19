@@ -19,6 +19,7 @@ module Postqueue
     end
 
     def self.enqueue_many(op:, entity_ids:, ignore_duplicates:) #:nodoc:
+      entity_ids = Array(entity_ids)
       entity_ids.uniq! if ignore_duplicates
 
       transaction do
