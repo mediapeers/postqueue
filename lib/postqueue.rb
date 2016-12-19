@@ -5,19 +5,11 @@ require_relative "postqueue/queue"
 require_relative "postqueue/default_queue"
 
 module Postqueue
-  def self.new(*args, &block)
-    ::Postqueue::Queue.new(*args, &block)
+  class << self
+    def new(*args, &block)
+      ::Postqueue::Queue.new(*args, &block)
+    end
   end
-
-  def self.async_processing=(async_processing)
-    @async_processing = async_processing
-  end
-
-  def self.async_processing?
-    @async_processing
-  end
-
-  self.async_processing = true
 end
 
 # require_relative 'postqueue/railtie' if defined?(Rails)

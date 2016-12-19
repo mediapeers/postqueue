@@ -11,20 +11,27 @@ module Postqueue
     # maximum number of processing attempts.
     attr_reader :max_attemps
 
-    def async_processing?
-      @async_processing
-    end
+    VALID_PROCESSING_VALUES = [ :async, :sync, :verify ]
 
-    attr_writer :async_processing
+    # sets or return the processing mode. This must be one of :async, :sync
+    # or :verify
+    def processing(processing = nil)
+      return @processing if processing.nil?
+
+      unless VALID_PROCESSING_VALUES.include?(processing)
+        raise ArgumentError, "Invalid processing value, must be one of #{VALID_PROCESSING_VALUES.inspect}"
+      end
+      @processing = processing
+    end
 
     def initialize(&block)
       @batch_sizes = {}
       @item_class = ::Postqueue::Item
       @default_batch_size = 1
       @max_attemps = 5
-      @async_processing = Postqueue.async_processing?
       @idempotent_operations = {}
       @batch_sizes = {}
+      @processing = :async
 
       on :missing_handler do |op, entity_ids|
         raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
@@ -49,7 +56,15 @@ module Postqueue
       enqueued_items = item_class.enqueue op: op, entity_id: entity_id, ignore_duplicates: idempotent_operation?(op)
       return enqueued_items unless enqueued_items > 0
 
-      process_until_empty(op: op) unless async_processing?
+      case processing
+      when :async
+        :nop
+      when :sync
+        process_until_empty(op: op)
+      when :verify
+        raise(MissingHandler, queue: self, op: op, entity_ids: [entity_id]) unless callback_for(op: op)
+      end
+
       enqueued_items
     end
   end

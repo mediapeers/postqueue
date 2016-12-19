@@ -9,7 +9,7 @@ module Postqueue
     end
 
     def to_s
-      "#{queue.item_class.table_name}: Unknown operation #{op} with #{entity_ids.count} entities"
+      "#{queue.item_class.table_name}: Unknown operation #{op.inspect} with #{entity_ids.count} entities"
     end
   end
 
