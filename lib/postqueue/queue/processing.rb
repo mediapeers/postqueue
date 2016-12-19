@@ -4,7 +4,7 @@ module Postqueue
     # Processes up to batch_size entries
     #
     # process batch_size: 100
-    def process(op: nil, batch_size: 100)
+    def process(op: nil, batch_size: nil)
       item_class.transaction do
         process_inside_transaction(op: op, batch_size: batch_size)
       end
@@ -15,7 +15,7 @@ module Postqueue
       process(op: op, batch_size: 1)
     end
 
-    def process_until_empty(op: nil, batch_size: 100)
+    def process_until_empty(op: nil, batch_size: nil)
       count = 0
       loop do
         processed_items = process(op: op, batch_size: batch_size)

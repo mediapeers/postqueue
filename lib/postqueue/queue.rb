@@ -47,9 +47,10 @@ module Postqueue
 
     def enqueue(op:, entity_id:)
       enqueued_items = item_class.enqueue op: op, entity_id: entity_id, ignore_duplicates: idempotent_operation?(op)
-      return unless enqueued_items > 0
+      return enqueued_items unless enqueued_items > 0
 
       process_until_empty(op: op) unless async_processing?
+      return enqueued_items
     end
   end
 end
@@ -58,3 +59,4 @@ require_relative "queue/select_and_lock"
 require_relative "queue/processing"
 require_relative "queue/callback"
 require_relative "queue/logging"
+require_relative "queue/runner"

@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require "postqueue"
+require "postqueue/cli"
+Postqueue::CLI.run ARGV

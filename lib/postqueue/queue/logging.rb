@@ -26,8 +26,14 @@ module Postqueue
       @on_exception
     end
 
+    public
+
     def logger
       Postqueue.logger
+    end
+
+    def to_s
+      item_class.table_name
     end
   end
 end

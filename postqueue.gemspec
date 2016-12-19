@@ -16,6 +16,7 @@ Gem::Specification.new do |gem|
 
   gem.files       = Dir["**/*"].select { |d| d =~ %r{^(README|data/|ext/|lib/|spec/|test/)} }
   # gem.executables = [ "postqueue-worker" ]
+  gem.executables = [ "postqueue" ]
 
   gem.add_development_dependency "rspec", "~> 3.4.0"
   gem.add_development_dependency "pry", "~> 0.10"
@@ -27,4 +28,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "timecop", "~> 0"
   gem.add_development_dependency "rubocop", "~> 0"
   gem.add_dependency "pg"
+  gem.add_dependency "table_print"
 end
