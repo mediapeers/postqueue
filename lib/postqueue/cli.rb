@@ -13,13 +13,38 @@ module Postqueue
 
       case options.sub_command
       when "stats"
+        require "table_print"
+
         connect_to_database!
-        sql = "SELECT * FROM #{Postqueue.item_class.table_name}"
-        tp Postqueue.item_class.find_by_sql(sql)
+        sql = <<-SQL
+        SELECT op,
+          COUNT(*) AS count,
+          MIN(now() - created_at) AS min_age,
+          MAX(now() - created_at) AS max_age,
+          AVG(now() - created_at) AS avg_age
+        FROM #{Postqueue.item_class.table_name} GROUP BY op
+        SQL
+
+        recs = Postqueue.item_class.find_by_sql(sql)
+        recs = recs.map do |rec|
+          {
+            op: rec.op,
+            count: rec.count,
+            min_age: rec.min_age,
+            max_age: rec.max_age,
+            avg_age: rec.avg_age
+          }
+        end
+        tp recs
+      when "peek"
+        require "table_print"
+
+        connect_to_database!
+        sql = "SELECT * FROM #{Postqueue.item_class.table_name} LIMIT 100"
+        tp Postqueue.default_queue.upcoming(subselect: false).limit(100).all
       when "enqueue"
         connect_to_database!
         count = Postqueue.enqueue op: options.op, entity_id: options.entity_ids
-        puts "returned #{count.inspect}"
         Postqueue.logger.info "Enqueued #{count} queue items"
       when "process"
         connect_to_instance!

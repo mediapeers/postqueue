@@ -1,14 +1,19 @@
 module Postqueue
   class Queue
+    def upcoming(relation = nil, subselect: true) #:nodoc:
+      relation = item_class.all if relation.nil?
+      relation = relation.select(:id, :entity_id, :op) if subselect
+
+      # Ordering by next_run_at and id should not strictly be necessary, but helps
+      # processing entries in the passed in order when enqueued at the same time.
+      relation.where("failed_attempts < ? AND next_run_at < ?", max_attemps, Time.now)
+              .order(:next_run_at, :id)
+    end
+
     # Select and lock up to \a limit unlocked items in the queue. Used by
     # select_and_lock_batch.
     def select_and_lock(relation, limit:)
-      # Ordering by next_run_at and id should not strictly be necessary, but helps
-      # processing entries in the passed in order when enqueued at the same time.
-      relation = relation
-                 .select(:id, :entity_id, :op)
-                 .where("failed_attempts < ? AND next_run_at < ?", max_attemps, Time.now)
-                 .order(:next_run_at, :id)
+      relation = upcoming(relation)
 
       # FOR UPDATE SKIP LOCKED selects and locks entries, but skips those that
       # are already locked - preventing this transaction from being locked.
