@@ -50,7 +50,7 @@ module Postqueue
       return enqueued_items unless enqueued_items > 0
 
       process_until_empty(op: op) unless async_processing?
-      return enqueued_items
+      enqueued_items
     end
   end
 end

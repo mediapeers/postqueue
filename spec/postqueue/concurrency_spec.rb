@@ -21,7 +21,8 @@ describe "concurrency tests" do
       log = File.open(LOG_FILE, "a")
       queue = Postqueue.new
       queue.on "*" do |_op, entity_ids|
-        sleep(0.0001); log.write "#{entity_ids.first}\n"
+        sleep(0.0001)
+        log.write "#{entity_ids.first}\n"
       end
       queue.process_until_empty
       log.close
@@ -33,9 +34,7 @@ describe "concurrency tests" do
   def run_scenario(cnt, n_threads)
     FileUtils.rm_rf LOG_FILE
 
-    queue = Postqueue.new do |queue|
-      # queue.default_batch_size = 10
-    end
+    queue = Postqueue.new
 
     benchmark "enqueuing #{cnt} ops" do
       queue.enqueue op: "myop", entity_id: (1..cnt)
@@ -67,9 +66,7 @@ describe "concurrency tests" do
   it "enqueues many entries" do
     cnt = 1000
 
-    queue = Postqueue.new do |queue|
-      # queue.default_batch_size = 10
-    end
+    queue = Postqueue.new
     benchmark "enqueuing #{cnt} ops" do
       queue.enqueue op: "myop", entity_id: (1..cnt)
     end

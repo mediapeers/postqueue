@@ -42,7 +42,6 @@ describe "processing" do
 
     it "calls the registered handler and returns the processed entries" do
       queue.enqueue op: "otherop", entity_id: 112
-      called = false
       queue.process_one(op: "otherop")
 
       op, ids = processed_events.first

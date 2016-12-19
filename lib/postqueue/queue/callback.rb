@@ -50,8 +50,6 @@ module Postqueue
       callbacks[op] || callbacks["*"]
     end
 
-    private
-
     def run_callback(op:, entity_ids:)
       queue_times = item_class.find_by_sql <<-SQL
         SELECT extract('epoch' from AVG(now() - created_at)) AS avg,

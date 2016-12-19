@@ -15,7 +15,9 @@ describe "error handling" do
 
   context "when handler raises an exception" do
     before do
-      queue.on "mytype" do raise E end
+      queue.on "mytype" do
+        raise E
+      end
       queue.enqueue op: "mytype", entity_id: 12
     end
 

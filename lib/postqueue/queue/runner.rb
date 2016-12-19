@@ -7,18 +7,19 @@ module Postqueue
     end
 
     def run!
-      if !run
-        run do |queue|
-          while true do
-            queue.logger.debug "#{queue}: Processing until empty"
-            queue.process_until_empty
-            queue.logger.debug "#{queue}: sleeping"
-            sleep 1
-          end
+      set_default_runner unless @run
+      @run.call(self)
+    end
+
+    def set_default_runner
+      run do |queue|
+        loop do
+          queue.logger.debug "#{queue}: Processing until empty"
+          queue.process_until_empty
+          queue.logger.debug "#{queue}: sleeping"
+          sleep 1
         end
       end
-
-      run.call(self)
     end
   end
 end

@@ -26,21 +26,11 @@ module Postqueue
         SQL
 
         recs = Postqueue.item_class.find_by_sql(sql)
-        recs = recs.map do |rec|
-          {
-            op: rec.op,
-            count: rec.count,
-            min_age: rec.min_age,
-            max_age: rec.max_age,
-            avg_age: rec.avg_age
-          }
-        end
-        tp recs
+        tp recs, :op, :count, :avg_age, :min_age, :max_age
       when "peek"
         require "table_print"
 
         connect_to_database!
-        sql = "SELECT * FROM #{Postqueue.item_class.table_name} LIMIT 100"
         tp Postqueue.default_queue.upcoming(subselect: false).limit(100).all
       when "enqueue"
         connect_to_database!
