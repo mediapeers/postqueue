@@ -53,7 +53,6 @@ module VersionNumberTracker
   # return current version as read from version_file
   def read_version
     hits = File.read(version_file).scan(VERSION_PATTERN).first
-    p hits
     raise "Can't detect verson string in #{version_file}" unless hits
     hits.first
   end
