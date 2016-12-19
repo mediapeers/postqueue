@@ -137,15 +137,21 @@ or an operation-specific batch_size:
 
 ## Test mode
 
-During unit tests it is likely preferrable to process queue items in synchronous fashion (i.e. as they come in).
-You can enable this mode via:
+Postqueue works usually in an async mode: queue items that are enqueued are kept in a queue,
+and must be picked up later explicitely for processing (via one of the `process`, `process_one` or `process_until_empty` methods).
 
-    Postqueue.async_processing = false
+During unit tests it is likely preferrable to process queue items in synchronous fashion -
+if you are interested in actual processing - or, at least, in a mode which validates that
+the `op` value is valid (that means that a handler is registered for that op). You can
+change the processing mode via
 
-You can also enable this on a queue-by-queue base via:
+    # can be :sync, :async, :verify
+    Postqueue.processing = :sync
+
+You can also change the processing mnode on a queue-by-queue base:
 
     Postqueue.new do |queue|
-      queue.async_processing = false
+      queue.processing = :sync
     end
 
 ## Installation
