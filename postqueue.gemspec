@@ -18,7 +18,7 @@ Gem::Specification.new do |gem|
   # gem.executables = [ "postqueue-worker" ]
   gem.executables = [ "postqueue" ]
 
-  gem.add_development_dependency "rspec", "~> 3.4.0"
+  gem.add_development_dependency "rspec", "~> 3.5.0"
   gem.add_development_dependency "pry", "~> 0.10"
   gem.add_development_dependency "pry-byebug"
   gem.add_development_dependency "rake", "~> 10.5.0"
