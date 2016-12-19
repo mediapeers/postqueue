@@ -1,6 +1,7 @@
 require "ostruct"
 
 require_relative "cli/options_parser"
+require_relative "cli/stats"
 
 module Postqueue
   module CLI
@@ -12,26 +13,9 @@ module Postqueue
       @options = OptionsParser.parse_args(argv)
 
       case options.sub_command
-      when "stats"
-        require "table_print"
-
+      when "stats", "peek"
         connect_to_database!
-        sql = <<-SQL
-        SELECT op,
-          COUNT(*) AS count,
-          MIN(now() - created_at) AS min_age,
-          MAX(now() - created_at) AS max_age,
-          AVG(now() - created_at) AS avg_age
-        FROM #{Postqueue.item_class.table_name} GROUP BY op
-        SQL
-
-        recs = Postqueue.item_class.find_by_sql(sql)
-        tp recs, :op, :count, :avg_age, :min_age, :max_age
-      when "peek"
-        require "table_print"
-
-        connect_to_database!
-        tp Postqueue.default_queue.upcoming(subselect: false).limit(100).all
+        Stats.send options.sub_command, options
       when "enqueue"
         connect_to_database!
         count = Postqueue.enqueue op: options.op, entity_id: options.entity_ids
