@@ -21,18 +21,21 @@ module Postqueue
         count = Postqueue.enqueue op: options.op, entity_id: options.entity_ids
         Postqueue.logger.info "Enqueued #{count} queue items"
       when "process"
-        connect_to_instance!
+        connect_to_rails!
         Postqueue.process batch_size: 1
       when "run"
-        connect_to_instance!
+        connect_to_rails!
         Postqueue.run!
       end
     end
 
-    def connect_to_instance!
-      path = "#{Dir.getwd}/config/postqueue.rb"
-      Postqueue.logger.info "Loading postqueue configuration from #{path}"
-      load path
+    def connect_to_rails!
+      if File.exists?("config/environment.rb")
+        load "config/environment.rb"
+      else
+        logger.warn "Trying to load postqueue configuration from config/postqueue.rb"
+        load "config/postqueue.rb"
+      end
     end
 
     def connect_to_database!
