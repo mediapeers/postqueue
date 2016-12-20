@@ -52,6 +52,7 @@ module Postqueue
       item_class.postpone items.map(&:id)
       log_exception(e, match.op, entity_ids)
       on_exception.call(e, match.op, entity_ids)
+      0
     end
   end
 end
