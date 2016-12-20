@@ -38,7 +38,7 @@ module Postqueue
       end
 
       on "fail" do |_op, entity_ids|
-        raise RuntimeError, "Postqueue test failure, w/entity_ids: #{entity_ids.inspect}"
+        raise "Postqueue test failure, w/entity_ids: #{entity_ids.inspect}"
       end
 
       on :missing_handler do |op, entity_ids|

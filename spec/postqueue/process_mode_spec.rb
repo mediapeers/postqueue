@@ -44,9 +44,9 @@ describe "process mode" do
     end
 
     it "raises an error for invalid ops" do
-      expect {
+      expect do
         queue.enqueue op: "invalid", entity_id: 12
-      }.to raise_error(Postqueue::MissingHandler)
+      end.to raise_error(Postqueue::MissingHandler)
     end
   end
 end

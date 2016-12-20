@@ -16,13 +16,13 @@ describe "enqueuing" do
     end
 
     it "enqueues arrays" do
-      queue.enqueue op: "myop", entity_id: [13,14,15]
-      expect(items.pluck(:entity_id)).to eq([12,13,14,15])
+      queue.enqueue op: "myop", entity_id: [13, 14, 15]
+      expect(items.pluck(:entity_id)).to eq([12, 13, 14, 15])
     end
 
     it "enqueues sets" do
-      queue.enqueue op: "myop", entity_id: Set.new([13,14,15])
-      expect(items.pluck(:entity_id)).to eq([12,13,14,15])
+      queue.enqueue op: "myop", entity_id: Set.new([13, 14, 15])
+      expect(items.pluck(:entity_id)).to eq([12, 13, 14, 15])
     end
 
     it "sets defaults" do
