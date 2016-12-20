@@ -16,7 +16,11 @@ module Postqueue
       def parse_args
         require "optparse"
         options = OpenStruct.new
-        options.sub_command = argv.shift || usage!
+        options.sub_command = argv.shift || "stats"
+
+        unless %w(stats peek enqueue run process).include?(options.sub_command)
+          usage!
+        end
 
         case options.sub_command
         when "enqueue"
@@ -32,13 +36,22 @@ module Postqueue
         argv.shift || usage!
       end
 
-      def usage!
+      def usage
         STDERR.puts <<-USAGE
-  postqueue stats
+This is postqueue #{Postqueue::VERSION}. Usage examples:
+
+  postqueue [ stats ]
+  postqueue peek
   postqueue enqueue op entity_id,entity_id,entity_id
   postqueue run
+  postqueue help
   postqueue process
-  USAGE
+
+USAGE
+      end
+
+      def usage!
+        usage
         exit 1
       end
     end

@@ -30,7 +30,7 @@ module Postqueue
     end
 
     def connect_to_rails!
-      if File.exists?("config/environment.rb")
+      if File.exist?("config/environment.rb")
         load "config/environment.rb"
       else
         logger.warn "Trying to load postqueue configuration from config/postqueue.rb"
