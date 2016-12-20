@@ -33,6 +33,14 @@ module Postqueue
       @batch_sizes = {}
       @processing = :async
 
+      on "test" do |_op, entity_ids|
+        Postqueue.logger.info "[test] processing entity_ids: #{entity_ids.inspect}"
+      end
+
+      on "fail" do |_op, entity_ids|
+        raise RuntimeError, "Postqueue test failure, w/entity_ids: #{entity_ids.inspect}"
+      end
+
       on :missing_handler do |op, entity_ids|
         raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
       end
