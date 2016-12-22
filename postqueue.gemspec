@@ -11,7 +11,7 @@ Gem::Specification.new do |gem|
 
   gem.summary     = "simplistic postgresql based queue with support for batching and idempotent operations"
   gem.description = "simplistic postgresql based queue with support for batching and idempotent operations"
-  gem.homepage    = "https://github.com/radiospiel/postqueue"
+  gem.homepage    = "https://github.com/mediapeers/postqueue"
   gem.license     = "MIT"
 
   gem.files       = Dir["**/*"].select { |d| d =~ %r{^(README|data/|ext/|lib/|spec/|test/)} }
