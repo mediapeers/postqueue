@@ -101,6 +101,8 @@ Postqueue.enqueue op: "refresh", entity_id: [12,13]
 Postqueue.enqueue op: "refresh", entity_id: [13,14]
 ```
 
+Note that enqueueing is pretty fast. My developer machine is able to enqueue ~20000 items per second.
+
 ### Processing items
 
 While we recommend to use the command line interface to process postqueue items you can certainly process these *from within ruby code* by using one of these methods:
