@@ -1,10 +1,8 @@
 # Postqueue
 
-## Intro
+The `postqueue` gem implements a simple to use queue on top of postgresql.
 
-The postqueue gem implements a simple to use queue on top of postgresql. 
-
-Lets have a word about words first: while a queue like this is typically used in a job queueing scenario, this document does not talk about jobs, it talks about **queue items**; it also does not schedule a job, it **enqueues** an item, and it does not executes a job, it **processes** queue items.
+Lets have a word about words first: while a queue like this is typically used for job queues, this document does not talk about jobs, it talks about **queue items**; we also do not schedule jobs, we **enqueues** items, and we don't executes a job, we **processes** queue items instead.
 
 So, why building an additional queue implementation? Compared to the usual suspects this is what postqueue brings to the table:
 

@@ -9,8 +9,8 @@ Gem::Specification.new do |gem|
   gem.authors = %w(radiospiel)
   gem.email   = %w(radiospiel@open-lab.org)
 
-  gem.summary     = "a postgres based queue implementation"
-  gem.description = "a postgres based queue implementation"
+  gem.summary     = "simplistic postgresql based queue with support for batching and idempotent operations"
+  gem.description = "simplistic postgresql based queue with support for batching and idempotent operations"
   gem.homepage    = "https://github.com/radiospiel/postqueue"
   gem.license     = "MIT"
 
