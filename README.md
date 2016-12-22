@@ -8,17 +8,17 @@ Lets have a word about words first: while a queue like this is typically used in
 
 So, why building an additional queue implementation? Compared to the usual suspects this is what postqueue brings to the table:
 
-- The item structure is intentionally kept super simple: an item is described by an `op` field - a string - and an `id` field, an integer. In a typical usecase a queue item would describe an operation on a specific entity, where `op` names both the operation and the entity type and the `id` field would describe the individual entity.
+- The **item structure** is intentionally kept very **simple**: an item is described by an `op` field - a string - and an `id` field, an integer. In a typical usecase a queue item would describe an operation on a specific entity, and `op` would name both the operation and the entity type (say: `"product/invalidate"`) and the `id` field would hold the id of the product to invalidate.
 
-- With such a simplistic item structure the queue itself can be searched or otherwise evaluated using SQL. While this is great to have insights into the queue it also allows special handling of idempotent operations and automatic batching.
+- Such a simplistic item structure lends quite well to **querying** the queue **using SQL**. While this is great for monitoring purposes - it is quite easy to fetch metrics regarding upcoming items - it also allows special handling of idempotent operations and automatic batching.
 
-- Some tasks that could be handled by queues are **idempotent operations**. Say, for example, a task needs to clean up a temporary space onec it is done, but it doesn't need to clean up right away. It can therefore batch this task into some kind of queue for later processing. Now it doesn't make sense to batch the same task over and over again when a task like this is already in the database.postqueue supports this feature by optionally skipping duplicates when enqueuing tasks.
+- Some tasks typically handled by queues are of **idempotent** nature. For example, reindexing a document into a NoSQL search index needs not be done twice in a row, since only the last change to the primary object should and ultimately will be stored in the search index. Such tasks can therefore be run only once. postqueue supports this feature by optionally skipping duplicates when enqueuing tasks.
 
-- Other tasks can be handled much more efficient when run in batches. Typical examples include processing a larger number of entities that need to be read from a database, but can be pulled in one query instead of N queries. postqueue automatically batches such items.
+- Other tasks can be handled much more efficient when **run in batches**. Typical examples include processing a larger number of entities that need to be read from a database, but could be pulled much more efficient in a single query instead of in N queries. postqueue automatically batches such items.
 
-- postqueue being based on Postgresql provides **transactional semantics**: an item written into the database in a transaction that fails afterwards is never processed.
+- Being based on Postgresql postqueue provides **transactional semantics**: an item written into the database in a transaction that fails afterwards is never processed.
 
-- automatic retries: like delayed job postqueue implements a rudimentary form of error processing. A failing item - this is an item which does not have a handler registered, or whose handler fails by raising an exception - is kept in the queue and reprocessed later. It is reprocessed up to N times (currently 5 times by default) until it is "doomed" ultimately. This is similar to delayed job's error handling, with some differences, however: 
+- **automatic retries**: like delayed job postqueue implements a rudimentary form of error processing. A failing item - this is an item which does not have a handler registered, or whose handler fails by raising an exception - is kept in the queue and reprocessed later. It is reprocessed up to N times (currently 5 times by default) until it is "doomed" ultimately. This is similar to delayed job's error handling, with some differences, however: 
 
   - no backtrace is kept in the database
   - the waiting time doesn't ramp up as fast (postqueue does `1.5 ** <number of retries>`)
