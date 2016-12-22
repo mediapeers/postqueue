@@ -64,7 +64,7 @@ describe "concurrency tests" do
   end
 
   it "enqueues many entries" do
-    cnt = 20000
+    cnt = 1000
 
     queue = Postqueue.new
     benchmark "enqueuing #{cnt} ops" do
