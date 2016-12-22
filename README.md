@@ -93,8 +93,11 @@ When run from inside a Rails application Postqueue will reuse the applications d
 Enqueuing items can be done using code like this:
 
 ```ruby
+# enqueue a single op
+Postqueue.enqueue op: "refresh", entity_id: 12
+
+# enqueue multiple ops in one go.
 Postqueue.enqueue op: "refresh", entity_id: [12,13]
-Postqueue.enqueue op: "refresh", entity_id: [12]
 Postqueue.enqueue op: "refresh", entity_id: [13,14]
 ```
 
