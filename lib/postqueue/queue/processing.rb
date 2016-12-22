@@ -36,7 +36,7 @@ module Postqueue
       entity_ids = items.map(&:entity_id)
       timing = run_callback(op: match.op, entity_ids: entity_ids)
 
-      on_processing(match.op, entity_ids, timing)
+      after_processing.call(match.op, entity_ids, timing)
       item_class.where(id: items.map(&:id)).delete_all
 
       # even though we try not to enqueue duplicates we cannot guarantee that,

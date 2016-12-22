@@ -222,6 +222,22 @@ The following would report exceptions to STDOUT and to rollbar:
       Rollbar.error(e)
     end
 
+### `after_processing` callback
+
+After a batch of operations is processed, Postqueue calls the `after_processing` callback. It receives the `op` and `entity_ids` from the current processing run, and a `timing` object, which has these attributes:
+
+- Timing#avg_queue_time: the average queueing time for all item in the batch;
+- Timing#max_queue_time: the maximum queueing time of any item in the batch;
+- Timing#processing_time: elapsed time for processing the batch.
+
+The default `after_processing` callback simply logs all information. You can
+easily use your own:
+
+    Postqueue.after_processing do |op, entity_ids, timing|
+      processing_time = timing.processing_time
+      Postqueue.logger.info "#{op] processing #{entity_ids.length}: #{'%.3f secs' % processing_time}"
+    end
+
 ## Testing postqueue applications
 
 Postqueue works usually in an async mode: queue items that are enqueued are kept in a queue, and must be picked up later explicitely for processing (via one of the `process`, `process_one` or `process_until_empty` methods).

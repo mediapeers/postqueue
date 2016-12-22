@@ -3,12 +3,15 @@ module Postqueue
   class Queue
     private
 
-    def on_processing(op, entity_ids, timing)
-      msg = "processing '#{op}' for id(s) #{entity_ids.join(',')}: "
-      msg += "processing #{entity_ids.length} items took #{'%.3f secs' % timing.total_processing_time}"
+    def after_processing(&block)
+      if block
+        @after_processing = block
+        if block.arity > -3 && block.arity != 3
+          raise ArgumentError, "Invalid after_processing block: must accept 3 arguments"
+        end
+      end
 
-      msg += ", queue_time: avg: #{'%.3f secs' % timing.avg_queue_time}/max: #{'%.3f secs' % timing.max_queue_time}"
-      logger.info msg
+      @after_processing
     end
 
     def log_exception(exception, op, entity_ids)

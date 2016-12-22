@@ -45,11 +45,27 @@ module Postqueue
         raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
       end
 
+      set_default_callbacks
+
+      yield self if block
+    end
+
+    def set_default_callbacks
       on_exception do |e, _, _|
         e.send :raise
       end
 
-      yield self if block
+      after_processing do |op, entity_ids, timing|
+        processing_time = timing.processing_time
+        avg_queue_time  = timing.avg_queue_time
+        max_queue_time  = timing.max_queue_time
+
+        msg = "processing '#{op}' for id(s) #{entity_ids.join(',')}: "
+        msg += "processing #{entity_ids.length} items took #{'%.3f secs' % processing_time}"
+        msg += ", queue_time: #{'%.3f secs (avg)' % avg_queue_time}/#{'%.3f secs (max)' % max_queue_time}"
+
+        Postqueue.logger.info msg
+      end
     end
 
     def batch_size(op:)
@@ -83,3 +99,4 @@ require_relative "queue/processing"
 require_relative "queue/callback"
 require_relative "queue/logging"
 require_relative "queue/runner"
+require_relative "queue/timing"
