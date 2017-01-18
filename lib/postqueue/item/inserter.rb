@@ -31,17 +31,17 @@ module Postqueue
       def prepared_inserter_statement
         @prepared_inserter_statements ||= {}
 
-        # a prepared connection is PER DATABASE connection. It is not shared across
+        # a prepared connection is PER DATABASE CONNECTION. It is not shared across
         # connections, and it is not per thread, since a Thread might use different
         # connections during its lifetime.
-        connection_id = connection.raw_connection.object_id
-        @prepared_inserter_statements[connection_id] ||= create_prepared_inserter_statement
+        raw_connection = connection.raw_connection
+        @prepared_inserter_statements[raw_connection.object_id] ||= create_prepared_inserter_statement(raw_connection)
       end
 
       # prepares the INSERT statement, and returns its name
-      def create_prepared_inserter_statement
-        name = "postqueue-insert-#{table_name}"
-        connection.raw_connection.prepare(name, insert_sql)
+      def create_prepared_inserter_statement(raw_connection)
+        name = "postqueue-insert-#{table_name}-#{raw_connection.object_id}"
+        raw_connection.prepare(name, insert_sql)
         name
       end
 
