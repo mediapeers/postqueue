@@ -24,6 +24,7 @@ module Postqueue
       end
     end
 
-    extend RawInserter
+    # extend RawInserter
+    extend ActiveRecordInserter
   end
 end
