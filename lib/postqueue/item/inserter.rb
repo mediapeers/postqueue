@@ -4,8 +4,8 @@ module Postqueue
   #
   # Postqueue::Item inserter modules.
   #
-  # This source file provides multiple implementations to insert Postqueue::Items. 
-  # Which one will be used depends on the "extend XXXInserter" line below. 
+  # This source file provides multiple implementations to insert Postqueue::Items.
+  # Which one will be used depends on the "extend XXXInserter" line below.
   class Item < ActiveRecord::Base
     module ActiveRecordInserter
       def insert_item(op:, entity_id:)
