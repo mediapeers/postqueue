@@ -22,10 +22,28 @@ module Postqueue
     SQL
   end
 
+  def self.upgrade_table!(table_name)
+    # upgrade id column to use BIGINT if necessary
+    id_max = Item.column_types['id'].send(:range).end
+    if id_max <= 2147483648
+      STDERR.puts "Changing type of #{table_name}.id column to BIGINT"
+      Item.connection.execute "ALTER TABLE #{table_name} ALTER COLUMN id TYPE BIGINT"
+      Item.connection.execute "ALTER SEQUENCE #{table_name}_id_seq RESTART WITH 2147483649"
+      Item.reset_column_information
+    end
+  end
+
   def self.migrate!(table_name = "postqueue")
-    Item.connection.execute <<-SQL
+    connection = Item.connection
+
+    if connection.tables.include?(table_name)
+      upgrade_table!(table_name)
+      return
+    end
+
+    connection.execute <<-SQL
     CREATE TABLE #{table_name} (
-      id          SERIAL PRIMARY KEY,
+      id          BIGSERIAL PRIMARY KEY,
       op          VARCHAR,
       entity_id   INTEGER NOT NULL DEFAULT 0,
       created_at  timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
