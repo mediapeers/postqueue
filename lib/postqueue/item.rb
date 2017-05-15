@@ -41,7 +41,6 @@ module Postqueue
       return
     end
 
-    # [TODO] check type of postqueue.id, and change to BIGSERIAL if necessary
     connection.execute <<-SQL
     CREATE TABLE #{table_name} (
       id          BIGSERIAL PRIMARY KEY,
