@@ -57,6 +57,8 @@ class AddPostqueue < ActiveRecord::Migration
 end
 ```
 
+Note: it should be safe to migrate! multiple times.
+
 ### Configuring Postqueue
 
 The postqueue configuration descrives all possible operations and their features:
