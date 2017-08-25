@@ -23,14 +23,18 @@ module Postqueue
   end
 
   def self.upgrade_table!(table_name)
-    # upgrade id column to use BIGINT if necessary
-    id_max = Item.column_types['id'].send(:range).end
-    if id_max <= 2147483648
-      STDERR.puts "Changing type of #{table_name}.id column to BIGINT"
-      Item.connection.execute "ALTER TABLE #{table_name} ALTER COLUMN id TYPE BIGINT"
-      Item.connection.execute "ALTER SEQUENCE #{table_name}_id_seq RESTART WITH 2147483649"
-      Item.reset_column_information
-    end
+    result = ActiveRecord::Base.connection.exec_query <<-SQL
+      SELECT data_type FROM information_schema.columns
+      WHERE table_name = '#{table_name}' AND column_name = 'id';
+    SQL
+
+    data_type = result.rows.first.first
+    return if data_type == 'bigint'
+
+    Postqueue.logger.info "Changing type of #{table_name}.id column to BIGINT"
+    Item.connection.execute "ALTER TABLE #{table_name} ALTER COLUMN id TYPE BIGINT"
+    Item.connection.execute "ALTER SEQUENCE #{table_name}_id_seq RESTART WITH 2147483649"
+    Item.reset_column_information
   end
 
   def self.migrate!(table_name = "postqueue")
@@ -40,6 +44,8 @@ module Postqueue
       upgrade_table!(table_name)
       return
     end
+
+    Postqueue.logger.info "Create table #{table_name}"
 
     connection.execute <<-SQL
     CREATE TABLE #{table_name} (

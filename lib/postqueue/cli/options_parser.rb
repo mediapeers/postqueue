@@ -3,6 +3,8 @@ require "ostruct"
 module Postqueue
   module CLI
     class OptionsParser
+      SUB_COMMANDS = %w(stats peek enqueue run process migrate)
+
       def self.parse_args(argv)
         new(argv).parse_args
       end
@@ -18,9 +20,7 @@ module Postqueue
         options = OpenStruct.new
         options.sub_command = argv.shift || "stats"
 
-        unless %w(stats peek enqueue run process).include?(options.sub_command)
-          usage!
-        end
+        usage! unless SUB_COMMANDS.include?(options.sub_command)
 
         case options.sub_command
         when "enqueue"
@@ -46,6 +46,7 @@ This is postqueue #{Postqueue::VERSION}. Usage examples:
   postqueue run
   postqueue help
   postqueue process
+  postqueue migrate
 
 USAGE
       end

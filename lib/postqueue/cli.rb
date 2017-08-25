@@ -26,6 +26,9 @@ module Postqueue
       when "run"
         connect_to_app!
         Postqueue.run!
+      when "migrate"
+        connect_to_database!
+        Postqueue.migrate!
       end
     end
 
