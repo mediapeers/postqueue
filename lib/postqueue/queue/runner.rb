@@ -16,8 +16,9 @@ module Postqueue
         loop do
           queue.logger.debug "#{queue}: Processing until empty"
           queue.process_until_empty
-          queue.logger.debug "#{queue}: sleeping"
-          sleep 1
+          queue.logger.debug "#{queue}: waiting"
+          Postqueue::Availability.wait
+          sleep 0.3
         end
       end
     end

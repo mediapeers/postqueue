@@ -82,6 +82,7 @@ module Postqueue
 
       case processing
       when :async
+        ::Postqueue::Availability.notify
         :nop
       when :sync
         process_until_empty(op: op)
