@@ -6,27 +6,22 @@ module Postqueue
     #
     # Returns the number of items that have been enqueued.
     def enqueue(op:, entity_id:, ignore_duplicates: false)
-      if entity_id.is_a?(Enumerable)
-        return enqueue_many(op: op, entity_ids: entity_id, ignore_duplicates: ignore_duplicates)
-      end
-
-      if ignore_duplicates && where(op: op, entity_id: entity_id).present?
-        return 0
-      end
-
-      insert_item op: op, entity_id: entity_id
-      1
-    end
-
-    private
-
-    def enqueue_many(op:, entity_ids:, ignore_duplicates:) #:nodoc:
-      entity_ids = Array(entity_ids)
-      entity_ids.uniq! if ignore_duplicates
+      # extract array of entity ids to enqueue.
+      entity_ids = entity_id.is_a?(Enumerable) ? entity_id.to_a : [ entity_id ]
 
       transaction do
+        # when ignoring duplicates we
+        #
+        # - ignore duplicates within the passed in entity_ids;
+        # - ignore entity ids that are already in the queue
+        if ignore_duplicates
+          entity_ids.uniq!
+          entity_ids -= where(op: op, entity_id: entity_ids).select("DISTINCT entity_id").pluck(:entity_id)
+        end
+
+        # Insert all remaining entity_ids
         entity_ids.each do |entity_id|
-          enqueue(op: op, entity_id: entity_id, ignore_duplicates: ignore_duplicates)
+          insert_item op: op, entity_id: entity_id
         end
       end
 
