@@ -4,10 +4,6 @@ module Postqueue
     # <tt>Queue#initialize</tt>.
     attr_accessor :item_class
 
-    # The default batch size. Will be used if no batch_size is defined
-    # for a specific operation.
-    attr_accessor :default_batch_size
-
     # maximum number of processing attempts.
     attr_reader :max_attemps
 
@@ -25,24 +21,22 @@ module Postqueue
     end
 
     def initialize(table_name:)
-      @item_class = ::Postqueue::Item.create_item_class(table_name: table_name)
+      @item_class = ::Postqueue::Item.create_item_class(queue: self, table_name: table_name)
       @max_attemps = 5
       @idempotent_operations = {}
       @batch_sizes = {}
-      @default_batch_size = 1
       @processing = :async
 
       set_default_callbacks
     end
 
     def enqueue(op:, entity_id:)
-      enqueued_items = item_class.enqueue op: op, entity_id: entity_id, ignore_duplicates: idempotent_operation?(op)
+      enqueued_items = item_class.enqueue op: op, entity_id: entity_id
       return enqueued_items unless enqueued_items > 0
 
       case processing
       when :async
         ::Postqueue::Availability.notify
-        :nop
       when :sync
         process_until_empty(op: op)
       when :verify
@@ -65,9 +59,12 @@ module Postqueue
     end
 
     def batch_size(op:)
-      @batch_sizes[op] || default_batch_size || 1
+      @batch_sizes.fetch(op, 1)
     end
 
+    public
+
+    # returns true if op is a idempotent operation
     def idempotent_operation?(op)
       @idempotent_operations.fetch(op) { @idempotent_operations.fetch("*", false) }
     end

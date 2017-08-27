@@ -15,7 +15,10 @@ module Postqueue
     # select_and_lock_batch.
     def select_and_lock(relation, limit:)
       relation = upcoming(relation, select_columns: [ :id, :entity_id, :op ])
+      skip_locked relation, limit: limit
+    end
 
+    def skip_locked(relation, limit:)
       # FOR UPDATE SKIP LOCKED selects and locks entries, but skips those that
       # are already locked - preventing this transaction from being locked.
       sql = relation.to_sql + " FOR UPDATE SKIP LOCKED"
@@ -57,6 +60,8 @@ module Postqueue
       relation = item_class.where(op: op, entity_id: entity_ids)
       select_and_lock(relation, limit: nil)
     end
+
+    private
 
     def calculate_batch_size(op:, max_batch_size:)
       recommended_batch_size = batch_size(op: op)

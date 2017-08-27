@@ -3,9 +3,9 @@ module Postqueue
   class Queue
     def run!
       loop do
-        queue.logger.debug "#{queue}: Processing until empty"
-        queue.process_until_empty
-        queue.logger.debug "#{queue}: waiting"
+        Postqueue.logger.debug "#{self}: Processing until empty"
+        process_until_empty
+        Postqueue.logger.debug "#{self}: waiting"
         Postqueue::Availability.wait
         sleep 0.3
       end

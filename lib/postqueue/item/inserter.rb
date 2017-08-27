@@ -21,10 +21,6 @@ module Postqueue
 
       private
 
-      def queue_attribute_names
-        [ :op, :entity_id ]
-      end
-
       def insert_sql
         @insert_sql ||= begin
           columns = queue_attribute_names.map(&:to_s)
