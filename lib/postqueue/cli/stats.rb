@@ -30,7 +30,7 @@ module Postqueue
 
       def peek(_options)
         require "table_print"
-        tp Postqueue.default_queue.upcoming(subselect: false).limit(100).all
+        tp Postqueue.default_queue.upcoming.limit(100).all
       end
     end
   end
