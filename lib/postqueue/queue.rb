@@ -24,11 +24,9 @@ module Postqueue
       @processing = processing
     end
 
-    def initialize()
-      raise ArgumentError, "Postqueue#initialize no longer supports block argument" if block_given?
-
+    def initialize(table_name:)
       @batch_sizes = {}
-      @item_class = ::Postqueue::Item
+      @item_class = ::Postqueue::Item.create_item_class(table_name: table_name)
       @default_batch_size = 1
       @max_attemps = 5
       @idempotent_operations = {}

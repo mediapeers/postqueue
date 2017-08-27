@@ -4,7 +4,23 @@ module Postqueue
   #
   # An item class.
   class Item < ActiveRecord::Base
-    self.table_name = :postqueue
+    self.table_name = nil
+    self.abstract_class = true
+
+    def self.create_item_class(table_name:)
+      klass = Class.new(self)
+      klass.table_name = table_name
+
+      # We need to give this class a name, otherwise a number of AR operations
+      # are really really slow.
+      Postqueue::Item.const_set(dynamic_item_class_name, klass)
+      klass
+    end
+
+    def self.dynamic_item_class_name
+      @dynamic_item_class_count ||= 0
+      "Dynamic#{@dynamic_item_class_count += 1}"
+    end
 
     def self.postpone(ids)
       connection.exec_query <<-SQL
