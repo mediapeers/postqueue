@@ -4,7 +4,7 @@ module Postqueue
     private
 
     def log_exception(exception, op, entity_ids)
-      logger.warn "processing '#{op}' for id(s) #{entity_ids.inspect}: caught #{exception}"
+      Postqueue.logger.warn "processing '#{op}' for id(s) #{entity_ids.inspect}: caught #{exception}"
     end
 
     def on_exception(&block)
@@ -16,10 +16,6 @@ module Postqueue
     end
 
     public
-
-    def logger
-      Postqueue.logger
-    end
 
     def to_s
       item_class.table_name

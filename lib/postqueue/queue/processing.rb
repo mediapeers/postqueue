@@ -89,7 +89,7 @@ module Postqueue
       msg += "processing #{entity_ids.length} items took #{'%.3f secs' % timing.processing}"
       msg += ", queue_time: #{'%.3f secs (avg)' % timing.avg}/#{'%.3f secs (max)' % timing.max}"
 
-      logger.info msg
+      Postqueue.logger.info msg
     end
   end
 end
