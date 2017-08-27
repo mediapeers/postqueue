@@ -49,23 +49,8 @@ module Postqueue
     end
 
     def run_callback(op:, entity_ids:)
-      connection = Postqueue::Item.connection
-      queue_times = item_class.find_by_sql <<-SQL
-        SELECT extract('epoch' from AVG(now() - created_at)) AS avg,
-               extract('epoch' from MAX(now() - created_at)) AS max
-        FROM #{item_class.table_name}
-        WHERE entity_id IN (#{entity_ids.join(',')})
-         AND op = '#{connection.quote_string op}'
-      SQL
-
-      queue_time = queue_times.first
-
-      processing_time = Benchmark.realtime do
-        callback = callback_for(op: op) || callbacks.fetch(:missing_handler)
-        callback.call(op, entity_ids)
-      end
-
-      Timing.new(queue_time.avg, queue_time.max, processing_time)
+      callback = callback_for(op: op) || callbacks.fetch(:missing_handler)
+      callback.call(op, entity_ids)
     end
   end
 end

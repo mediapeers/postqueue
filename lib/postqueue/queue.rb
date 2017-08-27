@@ -24,7 +24,9 @@ module Postqueue
       @processing = processing
     end
 
-    def initialize(&block)
+    def initialize()
+      raise ArgumentError, "Postqueue#initialize no longer supports block argument" if block_given?
+
       @batch_sizes = {}
       @item_class = ::Postqueue::Item
       @default_batch_size = 1
@@ -33,38 +35,16 @@ module Postqueue
       @batch_sizes = {}
       @processing = :async
 
-      on "test" do |_op, entity_ids|
-        Postqueue.logger.info "[test] processing entity_ids: #{entity_ids.inspect}"
-      end
+      set_default_callbacks
+    end
 
-      on "fail" do |_op, entity_ids|
-        raise "Postqueue test failure, w/entity_ids: #{entity_ids.inspect}"
-      end
-
+    def set_default_callbacks
       on :missing_handler do |op, entity_ids|
         raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
       end
 
-      set_default_callbacks
-
-      yield self if block
-    end
-
-    def set_default_callbacks
       on_exception do |e, _, _|
         e.send :raise
-      end
-
-      after_processing do |op, entity_ids, timing|
-        processing_time = timing.processing_time
-        avg_queue_time  = timing.avg_queue_time
-        max_queue_time  = timing.max_queue_time
-
-        msg = "processing '#{op}' for id(s) #{entity_ids.join(',')}: "
-        msg += "processing #{entity_ids.length} items took #{'%.3f secs' % processing_time}"
-        msg += ", queue_time: #{'%.3f secs (avg)' % avg_queue_time}/#{'%.3f secs (max)' % max_queue_time}"
-
-        Postqueue.logger.info msg
       end
     end
 
@@ -100,4 +80,3 @@ require_relative "queue/processing"
 require_relative "queue/callback"
 require_relative "queue/logging"
 require_relative "queue/runner"
-require_relative "queue/timing"

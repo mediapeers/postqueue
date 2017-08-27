@@ -6,13 +6,11 @@ describe "processing" do
   end
 
   let(:queue) do
-    Postqueue.new do |queue|
-      queue.on "batchable", batch_size: 10
-      queue.on "other-batchable", batch_size: 10
-
-      queue.on "*" do |op, entity_ids|
-        processed_events << [ op, entity_ids ]
-      end
+    queue = Postqueue.new
+    queue.on "batchable", batch_size: 10
+    queue.on "other-batchable", batch_size: 10
+    queue.on "*" do |op, entity_ids|
+      processed_events << [ op, entity_ids ]
     end
   end
 

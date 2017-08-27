@@ -2,9 +2,8 @@ require "spec_helper"
 
 describe "idempotent operations" do
   let(:queue) do
-    Postqueue.new do |queue|
-      queue.on "idempotent", idempotent: true
-    end
+    queue = Postqueue.new
+    queue.on "idempotent", idempotent: true
   end
 
   let(:items) { queue.item_class.all }

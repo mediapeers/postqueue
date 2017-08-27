@@ -2,10 +2,9 @@ require "spec_helper"
 
 describe "error handling" do
   let(:queue) do
-    Postqueue.new do |queue|
-      queue.on "batchable", batch_size: 10
-      queue.on "other-batchable", batch_size: 10
-    end
+    queue = Postqueue.new
+    queue.on "batchable", batch_size: 10
+    queue.on "other-batchable", batch_size: 10
   end
 
   let(:items) { queue.item_class.all }

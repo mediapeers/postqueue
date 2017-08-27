@@ -27,32 +27,69 @@ module Postqueue
 
     private
 
-    # The actual processing. Returns [ op, [ ids-of-processed-items ] ] or nil
+    # The actual processing. Returns the number of processed entries.
     def process_inside_transaction(op:, batch_size:)
+      # returns one or more entries from the postqueue table. This
+      # implementation makes sure to return only items with the
+      # same "op" value.
       items = select_and_lock_batch(op: op, max_batch_size: batch_size)
-      match = items.first
-      return 0 unless match
+      next_item = items.first
+      return 0 unless next_item
 
       entity_ids = items.map(&:entity_id)
-      timing = run_callback(op: match.op, entity_ids: entity_ids)
 
-      after_processing.call(match.op, entity_ids, timing)
-      item_class.where(id: items.map(&:id)).delete_all
+      timing = queueing_time(op: next_item.op, entity_ids: entity_ids)
+      timing.processing = Benchmark.realtime do
+        run_callback(op: next_item.op, entity_ids: entity_ids)
+        item_class.where(id: items.map(&:id)).delete_all
+      end
+
+      log_processing(op: next_item.op, entity_ids: entity_ids, timing: timing)
 
       # even though we try not to enqueue duplicates we cannot guarantee that,
       # since concurrent enqueue transactions might still insert duplicates.
       # That's why we explicitely remove all non-failed duplicates here.
-      if idempotent_operation?(match.op)
-        duplicates = select_and_lock_duplicates(op: match.op, entity_ids: entity_ids)
+      if idempotent_operation?(next_item.op)
+        duplicates = select_and_lock_duplicates(op: next_item.op, entity_ids: entity_ids)
         item_class.where(id: duplicates.map(&:id)).delete_all unless duplicates.empty?
       end
 
       entity_ids.length
     rescue => e
       item_class.postpone items.map(&:id)
-      log_exception(e, match.op, entity_ids)
-      on_exception.call(e, match.op, entity_ids)
+      log_exception(e, next_item.op, entity_ids)
+      @on_exception.call(e, next_item.op, entity_ids)
       0
+    end
+
+    class Timing
+      attr_accessor :avg, :max, :processing
+
+      def initialize(avg:, max:, processing: 0)
+        @avg, @max, @processing = avg, max, processing
+      end
+    end
+
+    def queueing_time(op:, entity_ids:)
+      queue_times = item_class.find_by_sql <<-SQL
+        SELECT extract('epoch' from AVG(now() - created_at)) AS avg,
+               extract('epoch' from MAX(now() - created_at)) AS max
+        FROM #{item_class.table_name}
+        WHERE entity_id IN (#{entity_ids.join(',')})
+          AND op = '#{item_class.connection.quote_string op}'
+      SQL
+
+      queue_time = queue_times.first
+      Timing.new(avg: queue_time.avg, max: queue_time.max)
+    end
+
+    # called after processing: this logs the processing results.
+    def log_processing(op:, entity_ids:, timing:)
+      msg = "processing '#{op}' for id(s) #{entity_ids.join(',')}: "
+      msg += "processing #{entity_ids.length} items took #{'%.3f secs' % timing.processing}"
+      msg += ", queue_time: #{'%.3f secs (avg)' % timing.avg}/#{'%.3f secs (max)' % timing.max}"
+
+      logger.info msg
     end
   end
 end

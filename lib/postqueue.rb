@@ -7,8 +7,10 @@ require_relative "postqueue/availability"
 
 module Postqueue
   class << self
-    def new(*args, &block)
-      ::Postqueue::Queue.new(*args, &block)
+    def new(*args)
+      raise ArgumentError, "Postqueue.new no longer supports block argument" if block_given?
+
+      ::Postqueue::Queue.new(*args)
     end
   end
 end
