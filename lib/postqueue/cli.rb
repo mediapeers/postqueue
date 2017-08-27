@@ -33,13 +33,8 @@ module Postqueue
     end
 
     def connect_to_app!
-      if File.exist?("config/environment.rb")
-        load "config/environment.rb"
-      else
-        Postqueue.logger.warn "Trying to load postqueue configuration from config/postqueue.rb"
-        load "config/postqueue.rb"
-        connect_to_database!
-      end
+      load "config/environment.rb"
+      connect_to_database!
     end
 
     def connect_to_database!

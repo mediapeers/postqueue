@@ -1,4 +1,10 @@
 #!/usr/bin/env ruby
-require "postqueue"
-require "postqueue/cli"
+require_relative "../lib/postqueue"
+require_relative "../lib/postqueue/cli"
+
+begin
+  require "byebug"
+rescue LoadError
+end
+
 Postqueue::CLI.run ARGV
