@@ -1,6 +1,19 @@
 module Postqueue
-  # The Postqueue processor processes items in a single Postqueue table.
-  class Queue
+  class MissingHandler < RuntimeError
+    attr_reader :queue, :op, :entity_ids
+
+    def initialize(queue:, op:, entity_ids:)
+      @queue = queue
+      @op = op
+      @entity_ids = entity_ids
+    end
+
+    def to_s
+      "#{queue.item_class.table_name}: Unknown operation #{op.inspect} with #{entity_ids.count} entities"
+    end
+  end
+
+  module ExceptionHandling
     private
 
     def log_exception(exception, op, entity_ids)
@@ -14,11 +27,9 @@ module Postqueue
       @on_exception = block
       self
     end
+  end
 
-    public
-
-    def to_s
-      item_class.table_name
-    end
+  class Queue
+    include ExceptionHandling
   end
 end

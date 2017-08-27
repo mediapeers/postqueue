@@ -1,11 +1,11 @@
 module Postqueue
   class Queue
-    # The AR::Base class to use. You would only change this if you want to run
-    # the queue in a different database or in a different table.
+    # The AR::Base class to use; this class is automatically created by 
+    # <tt>Queue#initialize</tt>.
     attr_accessor :item_class
 
-    # The default batch size. Will be used if no specific batch size is defined
-    # for an operation.
+    # The default batch size. Will be used if no batch_size is defined
+    # for a specific operation.
     attr_accessor :default_batch_size
 
     # maximum number of processing attempts.
@@ -13,8 +13,8 @@ module Postqueue
 
     VALID_PROCESSING_VALUES = [ :async, :sync, :verify ]
 
-    # sets or return the processing mode. This must be one of :async, :sync
-    # or :verify
+    # sets or return the processing mode. This can be one of :async, :sync
+    # or :verify (see VALID_PROCESSING_VALUES).
     def processing(processing = nil)
       return @processing if processing.nil?
 
@@ -25,33 +25,14 @@ module Postqueue
     end
 
     def initialize(table_name:)
-      @batch_sizes = {}
       @item_class = ::Postqueue::Item.create_item_class(table_name: table_name)
-      @default_batch_size = 1
       @max_attemps = 5
       @idempotent_operations = {}
       @batch_sizes = {}
+      @default_batch_size = 1
       @processing = :async
 
       set_default_callbacks
-    end
-
-    def set_default_callbacks
-      on :missing_handler do |op, entity_ids|
-        raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
-      end
-
-      on_exception do |e, _, _|
-        e.send :raise
-      end
-    end
-
-    def batch_size(op:)
-      @batch_sizes[op] || default_batch_size || 1
-    end
-
-    def idempotent_operation?(op)
-      @idempotent_operations.fetch(op) { @idempotent_operations.fetch("*", false) }
     end
 
     def enqueue(op:, entity_id:)
@@ -70,11 +51,31 @@ module Postqueue
 
       enqueued_items
     end
+
+    private
+
+    def set_default_callbacks
+      on :missing_handler do |op, entity_ids|
+        raise MissingHandler, queue: self, op: op, entity_ids: entity_ids
+      end
+
+      on_exception do |e, _, _|
+        e.send :raise
+      end
+    end
+
+    def batch_size(op:)
+      @batch_sizes[op] || default_batch_size || 1
+    end
+
+    def idempotent_operation?(op)
+      @idempotent_operations.fetch(op) { @idempotent_operations.fetch("*", false) }
+    end
   end
 end
 
 require_relative "queue/select_and_lock"
 require_relative "queue/processing"
 require_relative "queue/callback"
-require_relative "queue/logging"
+require_relative "queue/exception_handling"
 require_relative "queue/runner"

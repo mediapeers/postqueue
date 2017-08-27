@@ -1,18 +1,4 @@
 module Postqueue
-  class MissingHandler < RuntimeError
-    attr_reader :queue, :op, :entity_ids
-
-    def initialize(queue:, op:, entity_ids:)
-      @queue = queue
-      @op = op
-      @entity_ids = entity_ids
-    end
-
-    def to_s
-      "#{queue.item_class.table_name}: Unknown operation #{op.inspect} with #{entity_ids.count} entities"
-    end
-  end
-
   class Queue
     def assert_valid_op!(op)
       return if op == :missing_handler
