@@ -8,29 +8,30 @@ require_relative "postqueue/availability"
 module Postqueue
   class << self
     DEFAULT_TABLE_NAME = 'postqueue'
+    DEFAULT_POLICY     = 'multi_ops'
 
-    def new(table_name: DEFAULT_TABLE_NAME)
+    def reset!
+      @queues = nil
+    end
+
+    def new(table_name: DEFAULT_TABLE_NAME, policy: DEFAULT_POLICY)
       raise ArgumentError, "Postqueue.new no longer supports block argument" if block_given?
       raise ArgumentError, "Invalid table_name parameter" unless table_name
 
-      ::Postqueue::Queue.new(table_name: table_name)
+      @queues ||= {}
+      @queues[[table_name, policy]] ||= ::Postqueue::Queue.new(table_name: table_name, policy: policy)
     end
 
-    def queue_for_table(table_name)
-      @queues_for_table ||= {}
-      @queues_for_table[table_name] ||= new(table_name: table_name)
+    def run!(table_name: DEFAULT_TABLE_NAME, policy: DEFAULT_POLICY)
+      new(table_name: table_name, policy: policy).run!
     end
 
-    def run!(table_name: DEFAULT_TABLE_NAME)
-      queue_for_table(table_name).run!
+    def migrate!(table_name: DEFAULT_TABLE_NAME, policy: DEFAULT_POLICY)
+      new(table_name: table_name, policy: policy).item_class.migrate!
     end
 
-    def migrate!(table_name: DEFAULT_TABLE_NAME)
-      queue_for_table(table_name).item_class.migrate!
-    end
-
-    def unmigrate!(table_name: DEFAULT_TABLE_NAME)
-      queue_for_table(table_name).item_class.unmigrate!
+    def unmigrate!(table_name: DEFAULT_TABLE_NAME, policy: DEFAULT_POLICY)
+      new(table_name: table_name, policy: policy).item_class.unmigrate!
     end
   end
 end

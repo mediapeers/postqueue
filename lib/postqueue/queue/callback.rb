@@ -1,10 +1,7 @@
 module Postqueue
   class Queue
-    def assert_valid_op!(op)
-      return if op == :missing_handler
-      return if op.is_a?(String)
-
-      raise ArgumentError, "Invalid op #{op.inspect}, must be a string"
+    def ops
+      callbacks.keys.select { |op| op.is_a?(String) }
     end
 
     def on(op, batch_size: nil, idempotent: nil, &block)
@@ -25,6 +22,13 @@ module Postqueue
     end
 
     private
+
+    def assert_valid_op!(op)
+      return if op == :missing_handler
+      return if op.is_a?(String)
+
+      raise ArgumentError, "Invalid op #{op.inspect}, must be a string"
+    end
 
     def callbacks
       @callbacks ||= {}
