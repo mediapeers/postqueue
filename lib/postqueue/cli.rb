@@ -9,6 +9,10 @@ module Postqueue
 
     attr_reader :options
 
+    def queue
+      Postqueue.new
+    end
+
     def run(argv)
       @options = OptionsParser.parse_args(argv)
 
@@ -18,7 +22,7 @@ module Postqueue
         Stats.send options.sub_command, options
       when "enqueue"
         connect_to_database!
-        count = Postqueue.enqueue op: options.op, entity_id: options.entity_ids
+        count = queue.enqueue op: options.op, entity_id: options.entity_ids
         Postqueue.logger.info "Enqueued #{count} queue items"
       when "process"
         connect_to_app!

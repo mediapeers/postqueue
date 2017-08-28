@@ -3,7 +3,6 @@ require_relative "postqueue/item"
 require_relative "postqueue/version"
 require_relative "postqueue/queue"
 require_relative "postqueue/policy"
-require_relative "postqueue/default_queue"
 require_relative "postqueue/availability"
 
 module Postqueue
