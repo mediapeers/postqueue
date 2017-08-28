@@ -18,7 +18,7 @@ module Postqueue
       raise ArgumentError, "Postqueue.new no longer supports block argument" if block_given?
       raise ArgumentError, "Invalid table_name parameter" unless table_name
 
-      policy = ::Postqueue::Policy.determine(table_name: table_name)
+      policy = ::Postqueue::Policy.detect(table_name: table_name)
       @queues ||= {}
       @queues[[table_name, policy]] ||= ::Postqueue::Queue.new(table_name: table_name, policy: policy)
     end
@@ -41,7 +41,7 @@ module Postqueue
 
     # Drop database table \a table_name
     def unmigrate!(table_name: DEFAULT_TABLE_NAME)
-      policy = ::Postqueue::Policy.determine(table_name: table_name)
+      policy = ::Postqueue::Policy.detect(table_name: table_name)
       ::Postqueue::Policy.by_name(policy)::Migrations.migrate!(table_name)
     end
   end

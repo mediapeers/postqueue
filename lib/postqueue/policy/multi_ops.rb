@@ -3,8 +3,10 @@ require_relative "multi_ops/migrations"
 module Postqueue
   module Policy
     module MultiOps
+      QUEUE_ATTRIBUTES = [ :op, :entity_id ]
+
       def queue_attribute_names
-        [ :op, :entity_id ]
+        QUEUE_ATTRIBUTES
       end
 
       # Enqueues an queue item. If the operation is duplicate, and an entry with

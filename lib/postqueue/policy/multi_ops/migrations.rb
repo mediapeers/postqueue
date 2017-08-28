@@ -9,10 +9,8 @@ module Postqueue
         end
 
         def unmigrate!(table_name)
-          quoted_table_name = connection.quote_table_name table_name
-
           connection.execute <<-SQL
-            DROP TABLE IF EXISTS #{quoted_table_name};
+            DROP TABLE IF EXISTS #{connection.quote_table_name table_name};
           SQL
         end
 
@@ -52,7 +50,7 @@ module Postqueue
         def upgrade_table!(table_name)
           result = connection.exec_query <<-SQL
             SELECT data_type FROM information_schema.columns
-            WHERE table_name = '#{table_name}' AND column_name = 'id';
+            WHERE table_name = #{connection.quote table_name} AND column_name = 'id';
           SQL
 
           data_type = result.rows.first.first
