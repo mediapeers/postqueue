@@ -29,8 +29,8 @@ module Postqueue
           end
 
           # Insert all remaining entity_ids
-          entity_ids.each do |entity_id|
-            insert_item op: op, entity_id: entity_id
+          entity_ids.each do |eid|
+            insert_item op: op, entity_id: eid
           end
         end
 

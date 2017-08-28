@@ -92,6 +92,12 @@ Style/StringLiterals:
     - 'config.ru'
     - 'config/**/*.rb'
 
+Style/StringLiteralsInInterpolation:
+  Enabled: false
+
+Style/AsciiComments:
+  Enabled: false
+
 Style/IfUnlessModifier:
   Enabled: false
 
@@ -126,4 +132,7 @@ Style/ConditionalAssignment:
   Enabled: false
 
 Performance/StartWith:
+  Enabled: false
+
+Style/ParallelAssignment:
   Enabled: false

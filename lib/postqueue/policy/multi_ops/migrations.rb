@@ -35,12 +35,12 @@ module Postqueue
               next_run_at timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
               failed_attempts INTEGER NOT NULL DEFAULT 0
             );
-            
+
             -- This index should be usable to find duplicate duplicates in the table. While
             -- we search for entries with matching op and entity_id, we assume that entity_id
             -- has a much higher cardinality.
             CREATE INDEX #{connection.quote_table_name "#{table_name}_idx1"} ON #{quoted_table_name}(entity_id);
-            
+
             -- This index should help picking the next entries to run. Otherwise a full tablescan
             -- would be necessary whenevr we check out items.
             CREATE INDEX #{connection.quote_table_name "#{table_name}_idx2"} ON #{quoted_table_name}(next_run_at);
@@ -56,7 +56,7 @@ module Postqueue
           SQL
 
           data_type = result.rows.first.first
-          return if data_type == 'bigint'
+          return if data_type == "bigint"
 
           Postqueue.logger.info "[#{table_name}] Changing type of id column to BIGINT"
           connection.execute <<-SQL

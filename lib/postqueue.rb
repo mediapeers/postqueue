@@ -7,8 +7,8 @@ require_relative "postqueue/availability"
 
 module Postqueue
   class << self
-    DEFAULT_TABLE_NAME = 'postqueue'
-    DEFAULT_POLICY     = 'multi_ops'
+    DEFAULT_TABLE_NAME = "postqueue"
+    DEFAULT_POLICY     = "multi_ops"
 
     def reset!
       @queues = nil

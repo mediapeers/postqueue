@@ -1,3 +1,5 @@
+# rubocop:disable  Metrics/AbcSize
+
 module Postqueue
   # The Postqueue processor processes items in a single Postqueue table.
   class Queue

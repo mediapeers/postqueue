@@ -20,5 +20,5 @@ RSpec.configure do |config|
   config.order = "random"
 
   config.before { Postqueue.reset! }
-  config.after  { }
+  config.after  {}
 end

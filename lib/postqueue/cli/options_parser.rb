@@ -40,7 +40,7 @@ module Postqueue
       private
 
       def read_global_options!(options)
-        while argv.first && argv.first[0,1] == "-" do
+        while argv.first && argv.first[0, 1] == "-"
           case next_arg
           when "-t" then options.table_name = next_arg!
           else      usage!

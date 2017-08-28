@@ -2,7 +2,8 @@ module Postqueue
   module Policy
     extend self
 
-    def determine(table_name: table_name)
+    def determine(table_name:)
+      _ = table_name
       "multi_ops"
     end
 

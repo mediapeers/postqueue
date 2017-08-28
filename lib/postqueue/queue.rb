@@ -1,6 +1,6 @@
 module Postqueue
   class Queue
-    # The AR::Base class to use; this class is automatically created by 
+    # The AR::Base class to use; this class is automatically created by
     # <tt>Queue#initialize</tt>.
     attr_accessor :item_class
 

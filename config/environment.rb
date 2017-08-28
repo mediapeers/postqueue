@@ -1,7 +1,7 @@
 require "byebug"
 
 queue = Postqueue.new
- 
+
 queue.on "test", batch_size: 100, idempotent: true do |_op, entity_ids|
   Postqueue.logger.info "[test] processing entity_ids: #{entity_ids.inspect}"
 end

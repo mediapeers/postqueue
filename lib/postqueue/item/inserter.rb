@@ -15,7 +15,7 @@ module Postqueue
 
     module RawInserter
       def insert_item(attrs)
-        values = attrs.values_at *queue_attribute_names
+        values = attrs.values_at(*queue_attribute_names)
         connection.raw_connection.exec_params(insert_sql, values)
       end
 
@@ -24,13 +24,13 @@ module Postqueue
       def insert_sql
         @insert_sql ||= begin
           columns = queue_attribute_names.map(&:to_s)
-          placeholders = 1.upto(columns.count).map { |i| "$#{i}" } 
+          placeholders = 1.upto(columns.count).map { |i| "$#{i}" }
           "INSERT INTO #{table_name}(#{columns.join(", ")}) VALUES(#{placeholders.join(", ")})"
         end
       end
     end
 
     # extend ActiveRecordInserter   # 600µs per item
-    extend RawInserter              # 200µs per item
+    extend RawInserter # 200µs per item
   end
 end

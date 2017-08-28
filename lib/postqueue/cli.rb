@@ -1,3 +1,6 @@
+# rubocop:disable  Metrics/AbcSize
+# rubocop:disable  Metrics/CyclomaticComplexity
+
 require "ostruct"
 
 require_relative "cli/options_parser"
@@ -28,9 +31,9 @@ module Postqueue
       when "run"
         connect_to_app!
         Postqueue.run! table_name: options.table_name
-      # when "reprocess"
-      #   connect_to_app!
-      #   Postqueue.process batch_size: 1
+        # when "reprocess"
+        #   connect_to_app!
+        #   Postqueue.process batch_size: 1
       end
     end
 
