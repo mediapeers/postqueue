@@ -9,36 +9,35 @@ module Postqueue
 
     attr_reader :options
 
-    def queue
-      Postqueue.new
-    end
-
     def run(argv)
       @options = OptionsParser.parse_args(argv)
 
+      connect_to_database!
+
       case options.sub_command
-      when "stats", "peek"
-        connect_to_database!
-        Stats.send options.sub_command, options
+      when "migrate"  then Postqueue.migrate! table_name: options.table_name, policy: options.policy
+      when "stats"    then Stats.stats table_name: options.table_name
+      when "peek"     then Stats.peek table_name: options.table_name
       when "enqueue"
-        connect_to_database!
+        queue = Postqueue.new table_name: options.table_name
         count = queue.enqueue op: options.op, entity_id: options.entity_ids
         Postqueue.logger.info "Enqueued #{count} queue items"
       when "process"
         connect_to_app!
-        Postqueue.process batch_size: 1
+        Postqueue.process! table_name: options.table_name, batch_size: 1
       when "run"
         connect_to_app!
-        Postqueue.run!
-      when "migrate"
-        connect_to_database!
-        Postqueue.migrate!
+        Postqueue.run! table_name: options.table_name
+      # when "reprocess"
+      #   connect_to_app!
+      #   Postqueue.process batch_size: 1
       end
     end
 
+    private
+
     def connect_to_app!
       load "config/environment.rb"
-      connect_to_database!
     end
 
     def connect_to_database!

@@ -15,7 +15,7 @@ module Postqueue
     end
 
     def self.stdout_logger
-      @stdout_logger ||= Logger.new(STDOUT)
+      @stdout_logger ||= Logger.new(STDERR)
     end
   end
 

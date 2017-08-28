@@ -5,7 +5,9 @@ module Postqueue
     module Stats
       module_function
 
-      def stats(_options)
+      def stats(table_name:)
+        connection = ActiveRecord::Base.connection
+
         require "table_print"
         sql = <<-SQL
         SELECT op,
@@ -20,17 +22,17 @@ module Postqueue
           MIN(now() - created_at) AS min_age,
           MAX(now() - created_at) AS max_age,
           AVG(now() - created_at) AS avg_age
-        FROM #{Postqueue.item_class.table_name}
+        FROM #{connection.quote_table_name table_name}
         GROUP BY op, failed_attempts, status
         SQL
 
-        recs = Postqueue.item_class.find_by_sql(sql)
+        recs = Postqueue.new(table_name: table_name).item_class.find_by_sql(sql)
         tp recs, :status, :op, :failed_attempts, :count, :avg_age, :min_age, :max_age
       end
 
-      def peek(_options)
+      def peek(table_name:)
         require "table_print"
-        tp Postqueue.default_queue.upcoming.limit(100).all
+        tp Postqueue.new(table_name: table_name).upcoming.limit(100).all
       end
     end
   end
