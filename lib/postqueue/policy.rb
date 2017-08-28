@@ -4,20 +4,20 @@ module Postqueue
       module Migrations
         def unmigrate!
           connection.execute <<-SQL
-            DROP TABLE IF EXISTS #{table_name};
+            DROP TABLE IF EXISTS #{quoted_table_name};
           SQL
         end
 
         def migrate!
           if connection.tables.include?(table_name)
-            upgrade_table!(table_name)
+            upgrade_table!
             return
           end
 
-          Postqueue.logger.info "Create table #{table_name}"
+          Postqueue.logger.info "Create table #{quoted_table_name}"
 
           connection.execute <<-SQL
-          CREATE TABLE #{table_name} (
+          CREATE TABLE #{quoted_table_name} (
             id          BIGSERIAL PRIMARY KEY,
             op          VARCHAR,
             entity_id   INTEGER NOT NULL DEFAULT 0,
@@ -29,15 +29,23 @@ module Postqueue
           -- This index should be usable to find duplicate duplicates in the table. While
           -- we search for entries with matching op and entity_id, we assume that entity_id
           -- has a much higher cardinality.
-          CREATE INDEX #{table_name}_idx1 ON #{table_name}(entity_id);
+          CREATE INDEX #{quote_table_name "#{table_name}_idx1"} ON #{quoted_table_name}(entity_id);
 
           -- This index should help picking the next entries to run. Otherwise a full tablescan
           -- would be necessary whenevr we check out items.
-          CREATE INDEX #{table_name}_idx2 ON #{table_name}(next_run_at);
+          CREATE INDEX #{quote_table_name "#{table_name}_idx2"} ON #{quoted_table_name}(next_run_at);
           SQL
         end
         
         private
+
+        def quote_table_name(name)
+          connection.quote_table_name name
+        end
+
+        def quoted_table_name
+          quote_table_name table_name
+        end
 
         def upgrade_table!
           result = connection.exec_query <<-SQL
@@ -48,9 +56,9 @@ module Postqueue
           data_type = result.rows.first.first
           return if data_type == 'bigint'
 
-          Postqueue.logger.info "Changing type of #{table_name}.id column to BIGINT"
-          connection.execute "ALTER TABLE #{table_name} ALTER COLUMN id TYPE BIGINT"
-          connection.execute "ALTER SEQUENCE #{table_name}_id_seq RESTART WITH 2147483649"
+          Postqueue.logger.info "Changing type of #{quoted_table_name}.id column to BIGINT"
+          connection.execute "ALTER TABLE #{quoted_table_name} ALTER COLUMN id TYPE BIGINT"
+          connection.execute "ALTER SEQUENCE #{quote_table_name "#{table_name}_seq"} RESTART WITH 2147483649"
           reset_column_information
         end
       end
@@ -93,7 +101,7 @@ module Postqueue
 
       def postpone(ids)
         connection.exec_query <<-SQL
-          UPDATE #{table_name}
+          UPDATE #{quoted_table_name}
             SET failed_attempts = failed_attempts+1,
                 next_run_at = next_run_at + power(failed_attempts + 1, 1.5) * interval '10 second'
             WHERE id IN (#{ids.join(',')})
