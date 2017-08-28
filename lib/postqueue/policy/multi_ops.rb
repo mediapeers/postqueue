@@ -56,7 +56,7 @@ module Postqueue
           data_type = result.rows.first.first
           return if data_type == 'bigint'
 
-          Postqueue.logger.info "Changing type of #{quoted_table_name}.id column to BIGINT"
+          Postqueue.logger.info "Changing type of #{quote_table_name "#{table_name}.id"} column to BIGINT"
           connection.execute "ALTER TABLE #{quoted_table_name} ALTER COLUMN id TYPE BIGINT"
           connection.execute "ALTER SEQUENCE #{quote_table_name "#{table_name}_seq"} RESTART WITH 2147483649"
           reset_column_information
