@@ -17,5 +17,3 @@ queue.on_exception do |e, op, entity_ids|
 MSG
   # Rollbar.error(e)
 end
-
-puts "Loaded #{__FILE__}"

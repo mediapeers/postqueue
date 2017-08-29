@@ -14,7 +14,8 @@ module Postqueue
       @queues = nil
     end
 
-    def new(table_name: DEFAULT_TABLE_NAME)
+    def new(table_name: nil)
+      table_name = DEFAULT_TABLE_NAME if table_name.nil?
       raise ArgumentError, "Postqueue.new no longer supports block argument" if block_given?
       raise ArgumentError, "Invalid table_name parameter" unless table_name
 

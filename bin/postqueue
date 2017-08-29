@@ -7,4 +7,4 @@ begin
 rescue LoadError
 end
 
-Postqueue::CLI.run ARGV
+Postqueue::CLI.run! *ARGV
