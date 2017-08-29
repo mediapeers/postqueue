@@ -15,11 +15,11 @@ module Postqueue
       @queue
     end
 
-    def self.create_item_class(queue:, table_name:, policy:)
+    def self.create_item_class(queue:, table_name:)
       klass = Class.new(self)
       klass.table_name = table_name
       klass.queue = queue
-      klass.extend Postqueue::Policy.by_name(policy)
+      klass.extend Postqueue::Policy
 
       # We need to give this class a name, otherwise a number of AR operations
       # are really really slow.

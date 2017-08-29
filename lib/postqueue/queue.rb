@@ -20,8 +20,8 @@ module Postqueue
       @processing = processing
     end
 
-    def initialize(table_name:, policy:)
-      @item_class = ::Postqueue::Item.create_item_class(queue: self, table_name: table_name, policy: policy)
+    def initialize(table_name:)
+      @item_class = ::Postqueue::Item.create_item_class(queue: self, table_name: table_name)
       @max_attemps = 5
       @idempotent_operations = {}
       @batch_sizes = {}

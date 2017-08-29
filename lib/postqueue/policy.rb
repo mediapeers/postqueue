@@ -1,47 +1,61 @@
 module Postqueue
   module Policy
-    extend self
+    module Migrations
+      include Postqueue::Migrations
 
-    def by_name(name)
-      module_name = name.camelize
-      const_get module_name
-    rescue NameError
-      raise ArgumentError, "No such postqueue policy: #{name.inspect}"
-    end
+      extend self
 
-    def detect(table_name:)
-      policy = _detect(table_name: table_name)
-      Postqueue.logger.info "[#{table_name}] using #{policy} policy"
-      policy
-    end
-
-    def unmigrate!(table_name)
-      connection.execute <<-SQL
-        DROP TABLE IF EXISTS #{connection.quote_table_name table_name};
-      SQL
-    end
-
-    private
-
-    def connection
-      ActiveRecord::Base.connection
-    end
-
-    def _detect(table_name:)
-      columns = connection.exec_query <<-SQL
-        SELECT column_name FROM information_schema.columns
-        WHERE table_name = #{connection.quote table_name};
-      SQL
-      column_names = columns.map(&:first).map(&:last)
-      return "multi_ops" if (MultiOps::QUEUE_ATTRIBUTES.map(&:to_s) - column_names).empty?
-
-      if column_names.empty?
-        raise "Cannot detect policy for table #{table_name.inspect} (no such table)"
-      else
-        raise "Cannot detect policy for table #{table_name.inspect} w/columns #{column_names}"
+      def migrate!(table_name)
+        create_postqueue_table! table_name
+        change_postqueue_id_type! table_name
+        add_postqueue_queue_column! table_name
       end
+
+      def unmigrate!(table_name)
+        connection.execute <<-SQL
+          DROP TABLE IF EXISTS #{connection.quote_table_name table_name};
+        SQL
+      end
+    end
+
+    # Enqueues an queue item. If the operation is duplicate, and an entry with
+    # the same combination of op and entity_id exists already, no new entry will
+    # be added to the queue.
+    #
+    # Returns the number of items that have been enqueued.
+    def enqueue(op:, entity_id:, queue: nil)
+      ignore_duplicates = self.queue.idempotent_operation?(op)
+
+      # extract array of entity ids to enqueue.
+      entity_ids = entity_id.is_a?(Enumerable) ? entity_id.to_a : [ entity_id ]
+
+      transaction do
+        # when ignoring duplicates we
+        #
+        # - ignore duplicates within the passed in entity_ids;
+        # - ignore entity ids that are already in the queue
+        if ignore_duplicates
+          entity_ids.uniq!
+          existing_ids = where(op: op, entity_id: entity_ids, queue: queue).select("DISTINCT entity_id").pluck(:entity_id)
+          entity_ids -= existing_ids
+        end
+
+        # Insert all remaining entity_ids
+        entity_ids.each do |eid|
+          insert_item op: op, entity_id: eid, queue: queue
+        end
+      end
+
+      entity_ids.count
+    end
+
+    def postpone(ids)
+      connection.exec_query <<-SQL
+        UPDATE #{quoted_table_name}
+          SET failed_attempts = failed_attempts+1,
+              next_run_at = next_run_at + power(failed_attempts + 1, 1.5) * interval '10 second'
+          WHERE id IN (#{ids.join(',')})
+      SQL
     end
   end
 end
-
-require_relative "policy/multi_ops"

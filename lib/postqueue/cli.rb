@@ -7,7 +7,7 @@ module Postqueue::CLI
     raise "Missing table option; use --table=tablename" unless options.table
 
     connect_to_database!
-    Postqueue.migrate! table_name: options.table, policy: policy
+    Postqueue.migrate! table_name: options.table
   end
 
   def enqueue(op, entity_id, *entity_ids)
@@ -24,7 +24,7 @@ module Postqueue::CLI
 
   def stats
     connect_to_database!
-    table_name = options.table
+    table_name = options.table || Postqueue::DEFAULT_TABLE_NAME
     connection = ActiveRecord::Base.connection
 
     require "table_print"
