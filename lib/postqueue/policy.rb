@@ -15,10 +15,19 @@ module Postqueue
       policy
     end
 
+    def unmigrate!(table_name)
+      connection.execute <<-SQL
+        DROP TABLE IF EXISTS #{connection.quote_table_name table_name};
+      SQL
+    end
+
     private
 
+    def connection
+      ActiveRecord::Base.connection
+    end
+
     def _detect(table_name:)
-      connection = ActiveRecord::Base.connection
       columns = connection.exec_query <<-SQL
         SELECT column_name FROM information_schema.columns
         WHERE table_name = #{connection.quote table_name};

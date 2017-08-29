@@ -30,24 +30,24 @@ describe "processing" do
       expect(items.map(&:entity_id)).to contain_exactly(13, 14)
     end
 
-    it "honors search conditions" do
-      queue.enqueue(op: "otherop", entity_id: 112)
-
-      r = queue.process_one(op: "otherop")
-      expect(r).to eq(1)
-      expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
-    end
-
-    it "calls the registered handler and returns the processed entries" do
-      queue.enqueue op: "otherop", entity_id: 112
-      queue.process_one(op: "otherop")
-
-      op, ids = processed_events.first
-      expect(op).to eq("otherop")
-      expect(ids).to eq([112])
-
-      expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
-    end
+    # it "honors search conditions" do
+    #   queue.enqueue(op: "otherop", entity_id: 112)
+    #
+    #   r = queue.process_one(op: "otherop")
+    #   expect(r).to eq(1)
+    #   expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
+    # end
+    #
+    # it "calls the registered handler and returns the processed entries" do
+    #   queue.enqueue op: "otherop", entity_id: 112
+    #   queue.process_one(op: "otherop")
+    #
+    #   op, ids = processed_events.first
+    #   expect(op).to eq("otherop")
+    #   expect(ids).to eq([112])
+    #
+    #   expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
+    # end
   end
 
   context "when having entries with different entity_type and op" do
@@ -77,10 +77,10 @@ describe "processing" do
       expect(items.map(&:entity_id)).to contain_exactly(14, 16)
     end
 
-    it "honors search conditions" do
-      r = queue.process(op: "other-batchable")
-      expect(r).to eq(2)
-      expect(items.map(&:entity_id)).to contain_exactly(12, 13, 15)
-    end
+    # it "honors search conditions" do
+    #   r = queue.process(op: "other-batchable")
+    #   expect(r).to eq(2)
+    #   expect(items.map(&:entity_id)).to contain_exactly(12, 13, 15)
+    # end
   end
 end

@@ -3,7 +3,7 @@ require_relative "multi_ops/migrations"
 module Postqueue
   module Policy
     module MultiOps
-      QUEUE_ATTRIBUTES = [ :op, :entity_id ]
+      QUEUE_ATTRIBUTES = [ :op, :entity_id, :queue ]
 
       def queue_attribute_names
         QUEUE_ATTRIBUTES
@@ -14,8 +14,8 @@ module Postqueue
       # be added to the queue.
       #
       # Returns the number of items that have been enqueued.
-      def enqueue(op:, entity_id:)
-        ignore_duplicates = queue.idempotent_operation?(op)
+      def enqueue(op:, entity_id:, queue: nil)
+        ignore_duplicates = self.queue.idempotent_operation?(op)
 
         # extract array of entity ids to enqueue.
         entity_ids = entity_id.is_a?(Enumerable) ? entity_id.to_a : [ entity_id ]
@@ -27,12 +27,13 @@ module Postqueue
           # - ignore entity ids that are already in the queue
           if ignore_duplicates
             entity_ids.uniq!
-            entity_ids -= where(op: op, entity_id: entity_ids).select("DISTINCT entity_id").pluck(:entity_id)
+            existing_ids = where(op: op, entity_id: entity_ids, queue: queue).select("DISTINCT entity_id").pluck(:entity_id)
+            entity_ids -= existing_ids
           end
 
           # Insert all remaining entity_ids
           entity_ids.each do |eid|
-            insert_item op: op, entity_id: eid
+            insert_item op: op, entity_id: eid, queue: queue
           end
         end
 

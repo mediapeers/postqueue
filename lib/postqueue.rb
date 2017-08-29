@@ -25,25 +25,26 @@ module Postqueue
     end
 
     # run all entries from \a table_name
-    def run!(table_name: DEFAULT_TABLE_NAME)
-      new(table_name: table_name).run!
+    def run!(table_name: nil, queue: nil)
+      table_name = DEFAULT_TABLE_NAME if table_name.nil?
+      new(table_name: table_name).run!(queue: queue)
     end
 
     # process \a batch_size entries from \a table_name
-    def process!(table_name: DEFAULT_TABLE_NAME, op: nil, batch_size: nil)
-      new(table_name: table_name).process(op: op, batch_size: batch_size)
+    def process!(table_name: DEFAULT_TABLE_NAME, queue: nil, batch_size: nil)
+      new(table_name: table_name).process(queue: queue, batch_size: batch_size)
     end
 
     # Create or update a database table \a table_name to use policy \a policy
-    def migrate!(table_name: DEFAULT_TABLE_NAME, policy: nil)
-      policy ||= DEFAULT_POLICY
+    def migrate!(table_name: nil, policy: nil)
+      table_name ||= DEFAULT_TABLE_NAME
+      policy     ||= DEFAULT_POLICY
       ::Postqueue::Policy.by_name(policy)::Migrations.migrate!(table_name)
     end
 
     # Drop database table \a table_name
     def unmigrate!(table_name: DEFAULT_TABLE_NAME)
-      policy = ::Postqueue::Policy.detect(table_name: table_name)
-      ::Postqueue::Policy.by_name(policy)::Migrations.migrate!(table_name)
+      ::Postqueue::Policy.unmigrate!(table_name)
     end
   end
 end

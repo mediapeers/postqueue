@@ -30,15 +30,16 @@ module Postqueue
       set_default_callbacks
     end
 
-    def enqueue(op:, entity_id:)
-      enqueued_items = item_class.enqueue op: op, entity_id: entity_id
+    def enqueue(op:, entity_id:, queue: nil)
+      check_queue_support!(queue)
+      enqueued_items = item_class.enqueue op: op, entity_id: entity_id, queue: queue
       return enqueued_items unless enqueued_items > 0
 
       case processing
       when :async
         ::Postqueue::Availability.notify
       when :sync
-        process_until_empty(op: op)
+        process_until_empty(queue: queue)
       when :verify
         raise(MissingHandler, queue: self, op: op, entity_ids: [entity_id]) unless callback_for(op: op)
       end
@@ -46,7 +47,17 @@ module Postqueue
       enqueued_items
     end
 
+    def to_s
+      "#{item_class.table_name}"
+    end
+
     private
+
+    def check_queue_support!(queue_name)
+      return if queue_name.nil?
+      return if item_class.queue_support?
+      raise "No queue support configured: #{self}"
+    end
 
     def set_default_callbacks
       on :missing_handler do |op, entity_ids|

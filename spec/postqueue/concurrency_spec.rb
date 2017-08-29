@@ -27,7 +27,7 @@ describe "concurrency tests" do
       queue.process_until_empty
       log.close
     end
-  rescue => e
+  rescue RuntimeError => e
     STDERR.puts "runner aborts: #{e}, from #{e.backtrace.first}"
   end
 
@@ -53,7 +53,7 @@ describe "concurrency tests" do
 
   it "runs faster with multiple runners", transactions: false do
     # For small cnt values here the test below actually fails.
-    cnt = 1000
+    cnt = 100
 
     t0_runtime = run_scenario cnt, 0
     expect(processed_ids).to contain_exactly(*(1..cnt).to_a)
@@ -64,7 +64,7 @@ describe "concurrency tests" do
   end
 
   it "enqueues many entries" do
-    cnt = 1000
+    cnt = 100
 
     queue = Postqueue.new
     benchmark "enqueuing #{cnt} ops" do

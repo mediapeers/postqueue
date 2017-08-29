@@ -1,3 +1,6 @@
+# rubocop:disable Metrics/AbcSize
+# rubocop:disable Metrics/MethodLength
+
 module Postqueue
   module Policy
     module MultiOps
@@ -6,12 +9,6 @@ module Postqueue
 
         def connection
           ActiveRecord::Base.connection
-        end
-
-        def unmigrate!(table_name)
-          connection.execute <<-SQL
-            DROP TABLE IF EXISTS #{connection.quote_table_name table_name};
-          SQL
         end
 
         def migrate!(table_name)
@@ -28,6 +25,7 @@ module Postqueue
             CREATE TABLE #{quoted_table_name} (
               id          BIGSERIAL PRIMARY KEY,
               op          VARCHAR,
+              queue       VARCHAR,
               entity_id   INTEGER NOT NULL DEFAULT 0,
               created_at  timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
               next_run_at timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
@@ -53,14 +51,27 @@ module Postqueue
             WHERE table_name = #{connection.quote table_name} AND column_name = 'id';
           SQL
 
-          data_type = result.rows.first.first
-          return if data_type == "bigint"
+          data_type = result.rows.first&.first
+          if data_type != "bigint"
+            Postqueue.logger.info "[#{table_name}] Changing type of id column to BIGINT"
+            connection.execute <<-SQL
+              ALTER TABLE #{connection.quote_table_name table_name} ALTER COLUMN id TYPE BIGINT;
+              ALTER SEQUENCE #{connection.quote_table_name connection, "#{table_name}_seq"} RESTART WITH 2147483649
+            SQL
+          end
 
-          Postqueue.logger.info "[#{table_name}] Changing type of id column to BIGINT"
-          connection.execute <<-SQL
-            ALTER TABLE #{quoted_table_name} ALTER COLUMN id TYPE BIGINT;
-            ALTER SEQUENCE #{connection.quote_table_name connection, "#{table_name}_seq"} RESTART WITH 2147483649
+          result = connection.exec_query <<-SQL
+            SELECT data_type FROM information_schema.columns
+            WHERE table_name = #{connection.quote table_name} AND column_name = 'queue';
           SQL
+
+          data_type = result.rows.first&.first
+          unless data_type
+            Postqueue.logger.info "[#{table_name}] Adding queue column"
+            connection.execute <<-SQL
+              ALTER TABLE #{connection.quote_table_name table_name} ADD COLUMN queue VARCHAR;
+            SQL
+          end
         end
       end
     end

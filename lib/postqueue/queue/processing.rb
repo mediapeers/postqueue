@@ -6,21 +6,21 @@ module Postqueue
     # Processes up to batch_size entries
     #
     # process batch_size: 100
-    def process(op: nil, batch_size: nil)
+    def process(queue: nil, batch_size: nil)
       item_class.transaction do
-        process_inside_transaction(op: op, batch_size: batch_size)
+        process_inside_transaction(queue: queue, batch_size: batch_size)
       end
     end
 
     # processes a single entry
-    def process_one(op: nil)
-      process(op: op, batch_size: 1)
+    def process_one(queue: nil)
+      process(queue: queue, batch_size: 1)
     end
 
-    def process_until_empty(op: nil, batch_size: nil)
+    def process_until_empty(queue: nil, batch_size: nil)
       count = 0
       loop do
-        processed_items = process(op: op, batch_size: batch_size)
+        processed_items = process(queue: queue, batch_size: batch_size)
         break if processed_items == 0
         count += processed_items
       end
@@ -30,11 +30,11 @@ module Postqueue
     private
 
     # The actual processing. Returns the number of processed entries.
-    def process_inside_transaction(op:, batch_size:)
+    def process_inside_transaction(queue:, batch_size:)
       # returns one or more entries from the postqueue table. This
       # implementation makes sure to return only items with the
       # same "op" value.
-      items = select_and_lock_batch(op: op, max_batch_size: batch_size)
+      items = select_and_lock_batch(queue: queue, max_batch_size: batch_size)
       next_item = items.first
       return 0 unless next_item
 
@@ -52,12 +52,12 @@ module Postqueue
       # since concurrent enqueue transactions might still insert duplicates.
       # That's why we explicitely remove all non-failed duplicates here.
       if idempotent_operation?(next_item.op)
-        duplicates = select_and_lock_duplicates(op: next_item.op, entity_ids: entity_ids)
+        duplicates = select_and_lock_duplicates(queue: queue, op: next_item.op, entity_ids: entity_ids)
         item_class.where(id: duplicates.map(&:id)).delete_all unless duplicates.empty?
       end
 
       entity_ids.length
-    rescue => e
+    rescue RuntimeError => e
       item_class.postpone items.map(&:id)
       log_exception(e, next_item.op, entity_ids)
       @on_exception.call(e, next_item.op, entity_ids)

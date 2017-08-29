@@ -15,9 +15,9 @@ module Postqueue::CLI
     Postqueue.logger.info "Enqueued #{count} queue items"
   end
 
-  def run
+  def run(*queues)
     connect_to_app!
-    Postqueue.run! table_name: options.table, queue: options.queue
+    Postqueue.run! table_name: options.table, queue: (queues.empty? ? nil : queues)
   end
 
   def stats
