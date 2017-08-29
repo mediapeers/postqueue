@@ -3,7 +3,6 @@ require_relative "postqueue/migrations"
 require_relative "postqueue/item"
 require_relative "postqueue/version"
 require_relative "postqueue/queue"
-require_relative "postqueue/policy"
 require_relative "postqueue/availability"
 
 module Postqueue
@@ -37,13 +36,13 @@ module Postqueue
     # Create or update a database table \a table_name
     def migrate!(table_name: nil)
       table_name ||= DEFAULT_TABLE_NAME
-      ::Postqueue::Policy::Migrations.migrate!(table_name)
+      ::Postqueue::Item::Migrations.migrate!(table_name)
     end
 
     # Drop database table \a table_name
     def unmigrate!(table_name: DEFAULT_TABLE_NAME)
       raise "Missing table_name argument" unless table_name
-      ::Postqueue::Policy::Migrations.unmigrate!(table_name)
+      ::Postqueue::Item::Migrations.unmigrate!(table_name)
     end
   end
 end

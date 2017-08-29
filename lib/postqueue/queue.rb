@@ -20,8 +20,20 @@ module Postqueue
       @processing = processing
     end
 
+    def self.item_class(table_name:)
+      klass_name = "Item#{table_name.camelize}"
+      return const_get(klass_name) if const_defined?(klass_name)
+
+      # Note: we need to give this class a name. Not only does that help with
+      # keeping cached classes around, it also speeds up certain AR operations.
+      klass = ::Postqueue::Item.create_item_class(table_name: table_name)
+      const_set(klass_name, klass)
+      klass
+    end
+
     def initialize(table_name:)
-      @item_class = ::Postqueue::Item.create_item_class(queue: self, table_name: table_name)
+      @item_class = ::Postqueue::Queue.item_class(table_name: table_name)
+
       @max_attemps = 5
       @idempotent_operations = {}
       @batch_sizes = {}
@@ -32,8 +44,14 @@ module Postqueue
 
     def enqueue(op:, entity_id:, queue: nil)
       check_queue_support!(queue)
-      enqueued_items = item_class.enqueue op: op, entity_id: entity_id, queue: queue
-      return enqueued_items unless enqueued_items > 0
+
+      # enqueue items. If the operation is idempotent, we can ignore any operation
+      # that is already queued, since in that case the new operation's effect will
+      # only replicate what the already queued operation is doing, without any
+      # discernible effect.
+      enqueued_item_count = item_class.enqueue op: op, entity_id: entity_id, queue: queue,
+                                               ignore_if_exists: idempotent_operation?(op)
+      return 0 if enqueued_item_count == 0
 
       case processing
       when :async
@@ -44,11 +62,11 @@ module Postqueue
         raise(MissingHandler, queue: self, op: op, entity_ids: [entity_id]) unless callback_for(op: op)
       end
 
-      enqueued_items
+      enqueued_item_count
     end
 
     def to_s
-      "#{item_class.table_name}"
+      item_class.table_name.to_s
     end
 
     private
