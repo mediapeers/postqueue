@@ -3,7 +3,7 @@
 Dir.glob(__FILE__.sub(/\.rb$/, "/**/*.rb")).sort.each { |file| load file }
 
 module Postqueue::CLI
-  def migrate(policy = nil)
+  def migrate(_policy = nil)
     raise "Missing table option; use --table=tablename" unless options.table
 
     connect_to_database!
@@ -41,7 +41,7 @@ module Postqueue::CLI
       MIN(now() - created_at) AS min_age,
       MAX(now() - created_at) AS max_age,
       AVG(now() - created_at) AS avg_age
-    FROM #{connection.quote_table_name table_name}
+    FROM #{connection.quote_fq_identifier table_name}
     GROUP BY op, failed_attempts, status
     SQL
 

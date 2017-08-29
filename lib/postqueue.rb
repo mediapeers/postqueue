@@ -1,3 +1,5 @@
+require_relative "postqueue/ar_ext"
+
 require_relative "postqueue/logger"
 require_relative "postqueue/migrations"
 require_relative "postqueue/item"

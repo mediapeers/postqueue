@@ -13,7 +13,7 @@ module Postqueue
 
       def unmigrate!(table_name)
         connection.execute <<-SQL
-          DROP TABLE IF EXISTS #{connection.quote_table_name table_name};
+          DROP TABLE IF EXISTS #{connection.quote_fq_identifier table_name};
         SQL
       end
     end

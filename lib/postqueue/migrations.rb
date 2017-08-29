@@ -6,11 +6,18 @@ module Postqueue
       ActiveRecord::Base.connection
     end
 
-    def create_postqueue_table!(table_name)
-      return if connection.tables.include?(table_name)
+    def create_postqueue_table!(fq_table_name)
+      return if connection.has_table?(table_name: fq_table_name)
 
-      Postqueue.logger.info "Create table #{table_name}"
-      quoted_table_name = connection.quote_table_name table_name
+      Postqueue.logger.info "[#{fq_table_name}] Create table"
+      quoted_table_name = connection.quote_fq_identifier(fq_table_name)
+
+      schema, table_name = connection.parse_fq_name(fq_table_name)
+      if schema
+        connection.execute <<-SQL
+          CREATE SCHEMA IF NOT EXISTS #{connection.quote_fq_identifier schema}
+        SQL
+      end
 
       connection.execute <<-SQL
         CREATE TABLE #{quoted_table_name} (
@@ -26,40 +33,28 @@ module Postqueue
         -- This index should be usable to find duplicate duplicates in the table. While
         -- we search for entries with matching op and entity_id, we assume that entity_id
         -- has a much higher cardinality.
-        CREATE INDEX #{connection.quote_table_name "#{table_name}_idx1"} ON #{quoted_table_name}(entity_id);
+        CREATE INDEX #{connection.quote_identifier "#{table_name}_idx1"} ON #{quoted_table_name}(entity_id);
 
         -- This index should help picking the next entries to run. Otherwise a full tablescan
         -- would be necessary whenevr we check out items.
-        CREATE INDEX #{connection.quote_table_name "#{table_name}_idx2"} ON #{quoted_table_name}(next_run_at);
+        CREATE INDEX #{connection.quote_identifier "#{table_name}_idx2"} ON #{quoted_table_name}(next_run_at);
       SQL
     end
 
-    def change_postqueue_id_type!(table_name)
-      result = connection.exec_query <<-SQL
-        SELECT data_type FROM information_schema.columns
-        WHERE table_name = #{connection.quote table_name} AND column_name = 'id';
-      SQL
+    def change_postqueue_id_type!(fq_table_name)
+      return if connection.column_type(table_name: fq_table_name, column: "id") == "bigint"
 
-      data_type = result.rows.first&.first
-      return if data_type == "bigint"
-
-      Postqueue.logger.info "[#{table_name}] Changing type of id column to BIGINT"
+      Postqueue.logger.info "[#{fq_table_name}] Changing type of id column to BIGINT"
       connection.execute <<-SQL
-        ALTER TABLE #{connection.quote_table_name table_name} ALTER COLUMN id TYPE BIGINT;
-        ALTER SEQUENCE #{connection.quote_table_name connection, "#{table_name}_seq"} RESTART WITH 2147483649
+        ALTER TABLE #{connection.quote_fq_identifier fq_table_name} ALTER COLUMN id TYPE BIGINT;
+        ALTER SEQUENCE #{connection.quote_fq_identifier "#{fq_table_name}_id_seq"} RESTART WITH 2147483649
       SQL
     end
 
-    def add_postqueue_queue_column!(table_name)
-      result = connection.exec_query <<-SQL
-        SELECT data_type FROM information_schema.columns
-        WHERE table_name = #{connection.quote table_name} AND column_name = 'queue';
-      SQL
-      return if result.rows.first
-
-      Postqueue.logger.info "[#{table_name}] Adding queue column"
+    def add_postqueue_queue_column!(fq_table_name)
+      Postqueue.logger.info "[#{fq_table_name}] Adding queue column"
       connection.execute <<-SQL
-        ALTER TABLE #{connection.quote_table_name table_name} ADD COLUMN queue VARCHAR;
+        ALTER TABLE #{connection.quote_fq_identifier fq_table_name} ADD COLUMN IF NOT EXISTS queue VARCHAR;
       SQL
     end
   end
