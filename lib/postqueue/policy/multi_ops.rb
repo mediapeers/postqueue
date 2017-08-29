@@ -1,8 +1,18 @@
-require_relative "multi_ops/migrations"
-
 module Postqueue
   module Policy
     module MultiOps
+      module Migrations
+        include Postqueue::Migrations
+
+        extend self
+
+        def migrate!(table_name)
+          create_postqueue_table! table_name
+          change_postqueue_id_type! table_name
+          add_postqueue_queue_column! table_name
+        end
+      end
+
       QUEUE_ATTRIBUTES = [ :op, :entity_id, :queue ]
 
       def queue_attribute_names

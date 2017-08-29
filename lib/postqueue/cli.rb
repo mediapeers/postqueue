@@ -4,6 +4,8 @@ Dir.glob(__FILE__.sub(/\.rb$/, "/**/*.rb")).sort.each { |file| load file }
 
 module Postqueue::CLI
   def migrate(policy = nil)
+    raise "Missing table option; use --table=tablename" unless options.table
+
     connect_to_database!
     Postqueue.migrate! table_name: options.table, policy: policy
   end

@@ -26,8 +26,8 @@ module Postqueue::CLI
 
     args.reject! do |arg|
       case arg
-      when /\A--?([a-z_]+)=(.*)/ then @options[Regexp.last_match(1).to_sym] = Regexp.last_match(2)
-      when /\A--?[a-z_]+/        then @options[Regexp.last_match(1).to_sym] = true
+      when /\A--?([a-z_]+)=(.*)/  then @options[Regexp.last_match(1).to_sym] = Regexp.last_match(2)
+      when /\A--?([a-z_]+)/       then @options[Regexp.last_match(1).to_sym] = true
       end
     end
   end
