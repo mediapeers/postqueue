@@ -61,7 +61,7 @@ module Postqueue
       item_class.postpone items.map(&:id)
       log_exception(e, next_item.op, entity_ids)
       @on_exception.call(e, next_item.op, entity_ids)
-      0
+      entity_ids.length
     end
 
     class Timing
