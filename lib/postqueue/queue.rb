@@ -8,6 +8,10 @@ module Postqueue
       item_class
     end
 
+    def connection
+      item_class.connection
+    end
+
     # maximum number of processing attempts.
     attr_reader :max_attemps
 
@@ -61,3 +65,4 @@ require_relative "queue/enqueue"
 require_relative "queue/processing"
 require_relative "queue/exception_handling"
 require_relative "queue/runner"
+require_relative "queue/subscriptions"

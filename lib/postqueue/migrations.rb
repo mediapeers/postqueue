@@ -50,7 +50,6 @@ module Postqueue
 
       Postqueue.logger.info "[#{fq_table_name}] Create subscriptions table"
       quoted_table_name = connection.quote_fq_identifier(subscriptions_table_name)
-      _, table_name = connection.parse_fq_name(subscriptions_table_name)
 
       connection.execute <<-SQL
         CREATE TABLE #{quoted_table_name} (

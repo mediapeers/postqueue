@@ -19,12 +19,12 @@ RSpec.configure do |config|
   config.expect_with(:rspec) { |c| c.syntax = :expect }
   config.order = "random"
 
-  config.before { 
+  config.before do
     Postqueue.reset!
     ActiveRecord::Base.connection.execute <<-SQL
       DELETE FROM postqueue;
       DELETE FROM postqueue_subscriptions;
     SQL
-  }
-  config.after  {}
+  end
+  config.after {}
 end

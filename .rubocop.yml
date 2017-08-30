@@ -142,3 +142,6 @@ Style/PerlBackrefs:
 
 Style/SafeNavigation:
   Enabled: false
+
+Style/TrailingUnderscoreVariable:
+  Enabled: false
