@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/CyclomaticComplexity
 module Postqueue
   module Callback
     class Callback

@@ -1,3 +1,5 @@
+# rubocop:disable Metrics/MethodLength
+
 # This file defines basic module for command lines.
 
 require "shellwords"
