@@ -3,28 +3,25 @@
 Dir.glob(__FILE__.sub(/\.rb$/, "/**/*.rb")).sort.each { |file| load file }
 
 module Postqueue::CLI
-  def migrate(_policy = nil)
-    raise "Missing table option; use --table=tablename" unless options.table
-
+  def migrate(_policy = nil, table:)
     connect_to_database!
-    Postqueue.migrate! table_name: options.table
+    Postqueue.migrate! table_name: table
   end
 
-  def enqueue(op, entity_id, *entity_ids)
+  def enqueue(op, entity_id, *entity_ids, table: "postqueue", queue: nil)
     connect_to_database!
-    queue = Postqueue.new table_name: options.table
-    count = queue.enqueue op: op, entity_id: [ entity_id ] + entity_ids, queue: options.queue
+    q = Postqueue.new table_name: table
+    count = q.enqueue op: op, entity_id: [ entity_id ] + entity_ids, queue: queue
     Postqueue.logger.info "Enqueued #{count} queue items"
   end
 
-  def run(*queues)
+  def run(*queues, table: "postqueue")
     connect_to_app!
-    Postqueue.run! table_name: options.table, queue: (queues.empty? ? nil : queues)
+    Postqueue.run! table_name: table, queue: (queues.empty? ? nil : queues)
   end
 
-  def stats
+  def stats(table: "postqueue")
     connect_to_database!
-    table_name = options.table || Postqueue::DEFAULT_TABLE_NAME
     connection = ActiveRecord::Base.connection
 
     require "table_print"
@@ -41,7 +38,7 @@ module Postqueue::CLI
       MIN(now() - created_at) AS min_age,
       MAX(now() - created_at) AS max_age,
       AVG(now() - created_at) AS avg_age
-    FROM #{connection.quote_fq_identifier table_name}
+    FROM #{connection.quote_fq_identifier table}
     GROUP BY op, failed_attempts, status
     SQL
 
