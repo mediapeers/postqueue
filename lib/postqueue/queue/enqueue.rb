@@ -1,5 +1,3 @@
-# rubocop:disable Metrics/CyclomaticComplexity
-
 module Postqueue
   class Queue
     def enqueue(op:, entity_id:, channel: nil)
@@ -12,12 +10,6 @@ module Postqueue
       enqueued_item_count = item_class.enqueue op: op, entity_id: entity_id, channel: channel,
                                                ignore_if_exists: Postqueue.callback(op: op)&.idempotent?
       return 0 if enqueued_item_count == 0
-
-      if channel.nil?
-        subscriptions(op: op).each do |subscription|
-          item_class.enqueue op: op, entity_id: entity_id, channel: subscription, ignore_if_exists: false
-        end
-      end
 
       case processing
       when :async

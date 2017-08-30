@@ -49,14 +49,48 @@ module Postqueue
       return if connection.has_table?(table_name: subscriptions_table_name)
 
       Postqueue.logger.info "[#{fq_table_name}] Create subscriptions table"
-      quoted_table_name = connection.quote_fq_identifier(subscriptions_table_name)
+      quoted_table_name               = connection.quote_fq_identifier(fq_table_name)
+      quoted_subscriptions_table_name = connection.quote_fq_identifier(subscriptions_table_name)
+      quoted_trigger_name             = connection.quote_fq_identifier("#{fq_table_name}_trigger")
 
       connection.execute <<-SQL
-        CREATE TABLE #{quoted_table_name} (
+        CREATE TABLE #{quoted_subscriptions_table_name} (
           id      BIGSERIAL PRIMARY KEY,
           op      VARCHAR,                -- items of this op with channel = NULL
           channel VARCHAR                 -- will be copied into this channel
         );
+
+        CREATE OR REPLACE FUNCTION #{quoted_trigger_name}() RETURNS TRIGGER AS $body$
+        DECLARE
+          item #{quoted_table_name};
+          subscription #{quoted_subscriptions_table_name};
+        BEGIN
+          IF NEW.channel IS NULL THEN
+            FOR subscription IN
+              SELECT * FROM #{quoted_subscriptions_table_name} WHERE op = NEW.op
+            LOOP
+              item = ROW(
+                nextval('#{fq_table_name}_id_seq'),   -- id
+                NEW.op,                               -- op
+                subscription.channel,                 -- channel
+                NEW.entity_id,                        -- entity_id
+                NEW.created_at,                       -- created_at
+                NEW.next_run_at,                      -- next_run_at
+                0                                     -- failed_attempts
+              );
+
+              INSERT INTO #{quoted_table_name} VALUES (item.*);
+            END LOOP;
+          END IF;
+
+          RETURN NULL;
+        END;
+        $body$
+        LANGUAGE plpgsql
+        SECURITY DEFINER;
+
+        CREATE TRIGGER #{quoted_trigger_name} AFTER INSERT ON #{quoted_table_name}
+          FOR EACH ROW EXECUTE PROCEDURE #{quoted_trigger_name}();
       SQL
     end
 
