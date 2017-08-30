@@ -4,21 +4,29 @@ module Postqueue
     # Processes up to batch_size entries
     #
     # process batch_size: 100
-    def process(queue: nil, batch_size: 100)
+    def process(channel: nil, batch_size: 100)
       item_class.transaction do
-        process_inside_transaction(queue: queue, batch_size: batch_size)
+        # fetch one or more entries from the postqueue table. This will only
+        # return items with the same "op" value.
+        items = select_and_lock_batch(channel: channel, max_batch_size: batch_size)
+        frontrunner = items.first
+        return 0 unless frontrunner
+
+        process_batch channel: channel, op: frontrunner.op, items: items
+
+        items.length
       end
     end
 
     # processes a single entry
-    def process_one(queue: nil)
-      process(queue: queue, batch_size: 1)
+    def process_one(channel: nil)
+      process(channel: channel, batch_size: 1)
     end
 
-    def process_until_empty(queue: nil, batch_size: 100)
+    def process_until_empty(channel: nil, batch_size: 100)
       count = 0
       loop do
-        processed_items = process(queue: queue, batch_size: batch_size)
+        processed_items = process(channel: channel, batch_size: batch_size)
         break if processed_items == 0
         count += processed_items
       end
@@ -27,24 +35,11 @@ module Postqueue
 
     private
 
-    # The actual processing. Returns the number of processed entries.
-    def process_inside_transaction(queue:, batch_size:)
-      # returns one or more entries from the postqueue table. This
-      # implementation makes sure to return only items with the
-      # same "op" value.
-      items = select_and_lock_batch(queue: queue, max_batch_size: batch_size)
-      frontrunner = items.first
-      return 0 unless frontrunner
+    def process_batch(channel:, op:, items:)
+      item_ids   = items.map(&:id)
+      entity_ids = items.map(&:entity_id)
 
-      process_batch queue: queue, op: frontrunner.op,
-                    item_ids: items.map(&:id),
-                    entity_ids: items.map(&:entity_id)
-
-      items.length
-    end
-
-    def process_batch(queue:, op:, item_ids:, entity_ids:)
-      timing = queueing_time(queue: queue, op: op, entity_ids: entity_ids)
+      timing = queueing_time(channel: channel, op: op, entity_ids: entity_ids)
       timing.processing = Benchmark.realtime do
         Postqueue.run_callback(op: op, entity_ids: entity_ids)
         item_class.where(id: item_ids).delete_all
@@ -56,7 +51,7 @@ module Postqueue
       # since concurrent enqueue transactions might still insert duplicates.
       # That's why we explicitely remove all non-failed duplicates here.
       if Postqueue.callback(op: op).idempotent?
-        duplicates = select_and_lock_duplicates(queue: queue, op: op, entity_ids: entity_ids)
+        duplicates = select_and_lock_duplicates(channel: channel, op: op, entity_ids: entity_ids)
         item_class.where(id: duplicates.map(&:id)).delete_all unless duplicates.empty?
       end
     rescue RuntimeError => e
@@ -74,9 +69,9 @@ module Postqueue
       end
     end
 
-    def queueing_time(queue:, op:, entity_ids:)
+    def queueing_time(channel:, op:, entity_ids:)
       scope = item_class.where(entity_id: entity_ids, op: op)
-      scope = scope.where(queue: queue) if queue
+      scope = scope.where(channel: channel) if channel
 
       queue_times = item_class.find_by_sql <<-SQL
         SELECT extract('epoch' from AVG(now() - created_at)) AS avg,

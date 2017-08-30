@@ -10,9 +10,9 @@ module Postqueue
     self.table_name = nil
     self.abstract_class = true
 
-    def self.queue_support?
-      @queue_support = column_names.include?("queue") if @queue_support.nil?
-      @queue_support
+    def self.channel_support?
+      @channel_support = column_names.include?("channel") if @channel_support.nil?
+      @channel_support
     end
 
     def self.create_item_class(table_name:)

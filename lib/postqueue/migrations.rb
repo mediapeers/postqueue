@@ -26,7 +26,7 @@ module Postqueue
         CREATE TABLE #{quoted_table_name} (
           id          BIGSERIAL PRIMARY KEY,
           op          VARCHAR,
-          queue       VARCHAR,
+          channel     VARCHAR,
           entity_id   INTEGER NOT NULL DEFAULT 0,
           created_at  timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
           next_run_at timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
@@ -54,9 +54,9 @@ module Postqueue
 
       connection.execute <<-SQL
         CREATE TABLE #{quoted_table_name} (
-          id          BIGSERIAL PRIMARY KEY,
-          op          VARCHAR,                -- items of this op
-          queue       VARCHAR                 -- will be copied into this queue
+          id      BIGSERIAL PRIMARY KEY,
+          op      VARCHAR,                -- items of this op with channel = NULL
+          channel VARCHAR                 -- will be copied into this channel
         );
       SQL
     end
@@ -72,9 +72,9 @@ module Postqueue
     end
 
     def add_postqueue_queue_column!(fq_table_name)
-      Postqueue.logger.info "[#{fq_table_name}] Adding queue column"
+      Postqueue.logger.info "[#{fq_table_name}] Adding channel column"
       connection.execute <<-SQL
-        ALTER TABLE #{connection.quote_fq_identifier fq_table_name} ADD COLUMN IF NOT EXISTS queue VARCHAR;
+        ALTER TABLE #{connection.quote_fq_identifier fq_table_name} ADD COLUMN IF NOT EXISTS channel VARCHAR;
       SQL
     end
   end

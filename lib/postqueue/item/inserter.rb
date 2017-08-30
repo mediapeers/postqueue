@@ -6,12 +6,12 @@ module Postqueue
       # Inserter modules.
       #
       # This module provides a fast method to insert items
-      def queue_attribute_names
-        @queue_attribute_names ||= queue_support? ? [ :op, :entity_id, :queue ] : [ :op, :entity_id ]
+      def postqueue_attribute_names
+        @postqueue_attribute_names ||= channel_support? ? [ :op, :entity_id, :channel ] : [ :op, :entity_id ]
       end
 
       def insert_item(attrs)
-        values = attrs.values_at(*queue_attribute_names)
+        values = attrs.values_at(*postqueue_attribute_names)
         connection.raw_connection.exec_params(insert_sql, values)
       end
 
@@ -19,7 +19,7 @@ module Postqueue
 
       def insert_sql
         @insert_sql ||= begin
-          columns = queue_attribute_names
+          columns = postqueue_attribute_names
           placeholders = 1.upto(columns.count).map { |i| "$#{i}" }
           quoted_table_name = connection.quote_fq_identifier table_name
           "INSERT INTO #{quoted_table_name}(#{columns.join(", ")}) VALUES(#{placeholders.join(", ")})"

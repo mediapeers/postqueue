@@ -21,14 +21,14 @@ module Postqueue
     end
 
     # run all entries from \a table_name
-    def run!(table_name: nil, queue: nil)
+    def run!(table_name: nil, channel: nil)
       table_name = DEFAULT_TABLE_NAME if table_name.nil?
-      new(table_name: table_name).run!(queue: queue)
+      new(table_name: table_name).run!(channel: channel)
     end
 
     # process \a batch_size entries from \a table_name
-    def process!(table_name: DEFAULT_TABLE_NAME, queue: nil, batch_size: nil)
-      new(table_name: table_name).process(queue: queue, batch_size: batch_size)
+    def process!(table_name: DEFAULT_TABLE_NAME, channel: nil, batch_size: nil)
+      new(table_name: table_name).process(channel: channel, batch_size: batch_size)
     end
 
     # Create or update a database table \a table_name

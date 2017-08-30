@@ -8,16 +8,16 @@ module Postqueue::CLI
     Postqueue.migrate! table_name: table
   end
 
-  def enqueue(op, entity_id, *entity_ids, table: "postqueue", queue: nil)
+  def enqueue(op, entity_id, *entity_ids, table: "postqueue", channel: nil)
     connect_to_database!
-    q = Postqueue.new table_name: table
-    count = q.enqueue op: op, entity_id: [ entity_id ] + entity_ids, queue: queue
+    queue = Postqueue.new table_name: table
+    count = queue.enqueue op: op, entity_id: [ entity_id ] + entity_ids, channel: channel
     Postqueue.logger.info "Enqueued #{count} queue items"
   end
 
-  def run(*queues, table: "postqueue")
+  def run(*channels, table: "postqueue")
     connect_to_app!
-    Postqueue.run! table_name: table, queue: (queues.empty? ? nil : queues)
+    Postqueue.run! table_name: table, channel: (channels.empty? ? nil : channels)
   end
 
   def stats(table: "postqueue")
