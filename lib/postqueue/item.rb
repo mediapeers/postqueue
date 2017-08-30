@@ -21,11 +21,6 @@ module Postqueue
       klass
     end
 
-    def self.dynamic_item_class_name
-      @dynamic_item_class_count ||= 0
-      "Dynamic#{@dynamic_item_class_count += 1}"
-    end
-
     extend Inserter
     extend Policy
   end
