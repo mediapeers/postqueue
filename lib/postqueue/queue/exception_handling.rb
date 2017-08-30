@@ -1,15 +1,14 @@
 module Postqueue
   class MissingHandler < RuntimeError
-    attr_reader :queue, :op, :entity_ids
+    attr_reader :op, :entity_ids
 
-    def initialize(queue:, op:, entity_ids:)
-      @queue = queue
+    def initialize(op:, entity_ids:)
       @op = op
       @entity_ids = entity_ids
     end
 
     def to_s
-      "#{queue.item_class.table_name}: Unknown operation #{op.inspect} with #{entity_ids.count} entities"
+      "Unknown operation #{op.inspect} with #{entity_ids.count} entities"
     end
   end
 
@@ -22,14 +21,10 @@ module Postqueue
       self
     end
 
-    private
-
     def log_exception(exception, op, entity_ids)
       Postqueue.logger.warn "processing '#{op}' for id(s) #{entity_ids.inspect}: caught #{exception}"
     end
   end
 
-  class Queue
-    include ExceptionHandling
-  end
+  extend ExceptionHandling
 end

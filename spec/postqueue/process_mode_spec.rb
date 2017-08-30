@@ -3,15 +3,14 @@ require "spec_helper"
 describe "process mode" do
   let(:callback_invocations) { @callback_invocations ||= [] }
 
-  let(:queue) do
-    queue = Postqueue.new
-    queue.on "op" do |op, entity_ids|
+  before do
+    Postqueue.on "op" do |op, entity_ids|
       callback_invocations << [ op, entity_ids ]
     end
+    @queue = Postqueue.new
   end
 
-  let(:items) { queue.item_class.all }
-  let(:item)  { queue.item_class.first }
+  let(:queue) { @queue }
 
   context "when enqueuing in sync mode" do
     before do
@@ -24,7 +23,7 @@ describe "process mode" do
     end
 
     it "removed all items" do
-      expect(items.count).to eq(0)
+      expect(queue.items.count).to eq(0)
     end
   end
 
@@ -39,7 +38,7 @@ describe "process mode" do
     end
 
     it "does not remove items" do
-      expect(items.count).to eq(1)
+      expect(queue.items.count).to eq(1)
     end
 
     it "raises an error for invalid ops" do

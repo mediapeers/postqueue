@@ -5,23 +5,19 @@ require_relative "postqueue/migrations"
 require_relative "postqueue/item"
 require_relative "postqueue/version"
 require_relative "postqueue/queue"
+require_relative "postqueue/callback"
 require_relative "postqueue/availability"
 
 module Postqueue
   DEFAULT_TABLE_NAME = "postqueue"
 
   class << self
-    def reset!
-      @queues = nil
-    end
-
     def new(table_name: nil)
       table_name = DEFAULT_TABLE_NAME if table_name.nil?
       raise ArgumentError, "Postqueue.new no longer supports block argument" if block_given?
       raise ArgumentError, "Invalid table_name parameter" unless table_name
 
-      @queues ||= {}
-      @queues[table_name] ||= ::Postqueue::Queue.new(table_name: table_name)
+      ::Postqueue::Queue.new(table_name: table_name)
     end
 
     # run all entries from \a table_name

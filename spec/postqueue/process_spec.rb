@@ -6,16 +6,13 @@ describe "processing" do
   end
 
   let(:queue) do
-    queue = Postqueue.new
-    queue.on "batchable", batch_size: 10
-    queue.on "other-batchable", batch_size: 10
-    queue.on "*" do |op, entity_ids|
+    Postqueue.on "batchable", batch_size: 10
+    Postqueue.on "other-batchable", batch_size: 10
+    Postqueue.on "*" do |op, entity_ids|
       processed_events << [ op, entity_ids ]
     end
+    Postqueue.new
   end
-
-  let(:items) { queue.item_class.all }
-  let(:item)  { queue.item_class.first }
 
   describe "basics" do
     before do
@@ -27,27 +24,8 @@ describe "processing" do
     it "processes the first entry" do
       r = queue.process_one
       expect(r).to eq(1)
-      expect(items.map(&:entity_id)).to contain_exactly(13, 14)
+      expect(queue.items.pluck(:entity_id)).to contain_exactly(13, 14)
     end
-
-    # it "honors search conditions" do
-    #   queue.enqueue(op: "otherop", entity_id: 112)
-    #
-    #   r = queue.process_one(op: "otherop")
-    #   expect(r).to eq(1)
-    #   expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
-    # end
-    #
-    # it "calls the registered handler and returns the processed entries" do
-    #   queue.enqueue op: "otherop", entity_id: 112
-    #   queue.process_one(op: "otherop")
-    #
-    #   op, ids = processed_events.first
-    #   expect(op).to eq("otherop")
-    #   expect(ids).to eq([112])
-    #
-    #   expect(items.map(&:entity_id)).to contain_exactly(12, 13, 14)
-    # end
   end
 
   context "when having entries with different entity_type and op" do
@@ -62,25 +40,19 @@ describe "processing" do
     it "processes one matching entry with batch_size 1" do
       r = queue.process batch_size: 1
       expect(r).to eq(1)
-      expect(items.map(&:entity_id)).to contain_exactly(13, 14, 15, 16)
+      expect(queue.items.pluck(:entity_id)).to contain_exactly(13, 14, 15, 16)
     end
 
     it "processes two matching entries" do
       r = queue.process batch_size: 2
       expect(r).to eq(2)
-      expect(items.map(&:entity_id)).to contain_exactly(14, 15, 16)
+      expect(queue.items.pluck(:entity_id)).to contain_exactly(14, 15, 16)
     end
 
     it "processes all matching entries" do
       r = queue.process
       expect(r).to eq(3)
-      expect(items.map(&:entity_id)).to contain_exactly(14, 16)
+      expect(queue.items.pluck(:entity_id)).to contain_exactly(14, 16)
     end
-
-    # it "honors search conditions" do
-    #   r = queue.process(op: "other-batchable")
-    #   expect(r).to eq(2)
-    #   expect(items.map(&:entity_id)).to contain_exactly(12, 13, 15)
-    # end
   end
 end

@@ -4,14 +4,11 @@ describe "wildcard processing" do
   let(:callback_invocations) { @callback_invocations ||= [] }
 
   let(:queue) do
-    queue = Postqueue.new
-    queue.on "*" do |op, entity_ids|
+    Postqueue.on "*" do |op, entity_ids|
       callback_invocations << [ op, entity_ids ]
     end
+    Postqueue.new
   end
-
-  let(:items) { queue.item_class.all }
-  let(:item)  { queue.item_class.first }
 
   context "when enqueuing in sync mode" do
     before do
@@ -24,7 +21,7 @@ describe "wildcard processing" do
     end
 
     it "removed all items" do
-      expect(items.count).to eq(0)
+      expect(queue.items.count).to eq(0)
     end
   end
 end
