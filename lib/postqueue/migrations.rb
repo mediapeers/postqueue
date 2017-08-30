@@ -6,18 +6,21 @@ module Postqueue
       ActiveRecord::Base.connection
     end
 
+    def create_schema!(fq_table_name)
+      schema, _ = connection.parse_fq_name(fq_table_name)
+      return unless schema
+
+      connection.execute <<-SQL
+        CREATE SCHEMA IF NOT EXISTS #{connection.quote_fq_identifier schema}
+      SQL
+    end
+
     def create_postqueue_table!(fq_table_name)
       return if connection.has_table?(table_name: fq_table_name)
 
       Postqueue.logger.info "[#{fq_table_name}] Create table"
       quoted_table_name = connection.quote_fq_identifier(fq_table_name)
-
-      schema, table_name = connection.parse_fq_name(fq_table_name)
-      if schema
-        connection.execute <<-SQL
-          CREATE SCHEMA IF NOT EXISTS #{connection.quote_fq_identifier schema}
-        SQL
-      end
+      _, table_name = connection.parse_fq_name(fq_table_name)
 
       connection.execute <<-SQL
         CREATE TABLE #{quoted_table_name} (
@@ -38,6 +41,23 @@ module Postqueue
         -- This index should help picking the next entries to run. Otherwise a full tablescan
         -- would be necessary whenevr we check out items.
         CREATE INDEX #{connection.quote_identifier "#{table_name}_idx2"} ON #{quoted_table_name}(next_run_at);
+      SQL
+    end
+
+    def create_subscriptions_table!(fq_table_name)
+      subscriptions_table_name = "#{fq_table_name}_subscriptions"
+      return if connection.has_table?(table_name: subscriptions_table_name)
+
+      Postqueue.logger.info "[#{fq_table_name}] Create subscriptions table"
+      quoted_table_name = connection.quote_fq_identifier(subscriptions_table_name)
+      _, table_name = connection.parse_fq_name(subscriptions_table_name)
+
+      connection.execute <<-SQL
+        CREATE TABLE #{quoted_table_name} (
+          id          BIGSERIAL PRIMARY KEY,
+          op          VARCHAR,                -- items of this op
+          queue       VARCHAR                 -- will be copied into this queue
+        );
       SQL
     end
 

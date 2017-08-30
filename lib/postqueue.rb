@@ -39,7 +39,6 @@ module Postqueue
 
     # Drop database table \a table_name
     def unmigrate!(table_name: DEFAULT_TABLE_NAME)
-      raise "Missing table_name argument" unless table_name
       ::Postqueue::Item::Migrations.unmigrate!(table_name)
     end
   end
