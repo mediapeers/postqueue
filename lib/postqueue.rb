@@ -7,6 +7,7 @@ require_relative "postqueue/version"
 require_relative "postqueue/queue"
 require_relative "postqueue/callback"
 require_relative "postqueue/availability"
+require_relative "postqueue/tracker"
 
 module Postqueue
   DEFAULT_TABLE_NAME = ENV["POSTQUEUE_TABLE_NAME"] || "postqueue"

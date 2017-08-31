@@ -39,7 +39,14 @@ class ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
         WHERE  pg_index.indrelid = '#{table_name}'::regclass AND pg_index.indisprimary;
     SQL
 
-    result.each_row.map { |row| { name: row[0], type: row[1] }}
+    result.each_row.map { |row| OpenStruct.new(name: row[0], type: row[1]) }
+  end
+
+  def primary_key_column(table_name:)
+    pks = connection.primary_key_columns table_name: tracked_table
+    raise "#{table_name}: No support for tables with more than one primary key columns" if pks.length > 1
+    raise "#{table_name}: No support for tables with no primary key column" if pks.length < 1
+    pks.first
   end
 
   def parse_fq_name(fq_table_name)
