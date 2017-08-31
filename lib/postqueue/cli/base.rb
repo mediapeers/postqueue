@@ -1,4 +1,7 @@
 # rubocop:disable Metrics/MethodLength
+# rubocop:disable Metrics/AbcSize
+# rubocop:disable Metrics/PerceivedComplexity
+# rubocop:disable Metrics/CyclomaticComplexity
 
 # This file defines basic module for command lines.
 
@@ -43,18 +46,18 @@ module Postqueue::CLI
     command = command.tr(":", "_")
     help! unless commands.include?(command)
 
-    method = public_instance_method(command)
-    if method.arity > 0 && args.count != method.arity
-      STDERR.puts "Invalid number of arguments for '#{command}', expect #{method.arity}"
-      help! command
-    elsif method.arity < 0 && args.count < -method.arity - 1
-      STDERR.puts "Invalid number of arguments for '#{command}', expect at least #{-method.arity - 1}"
-      help! command
-    end
-
     if keyword_parameters?(command)
       options = extract_options!(args)
       args << options
+    end
+
+    method = public_instance_method(command)
+    if method.arity > 0 && args.count != method.arity
+      STDERR.puts "Invalid number of arguments (#{args.count}) for '#{command}', expect #{method.arity}"
+      help! command
+    elsif method.arity < 0 && args.count < -method.arity - 1
+      STDERR.puts "Invalid number of arguments (#{args.count}) for '#{command}', expect at least #{-method.arity - 1}"
+      help! command
     end
 
     send command, *args

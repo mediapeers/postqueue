@@ -22,7 +22,7 @@ module Postqueue::CLI
 
     ActiveRecord::Base.transaction do
       ops.each do |op|
-        queue.subscribe channel: channel, op: op 
+        queue.subscribe channel: channel, op: op
       end
     end
   end
@@ -32,12 +32,12 @@ module Postqueue::CLI
     queue = Postqueue.new table_name: table
 
     ActiveRecord::Base.transaction do
-      if ops.length > 0
-        ops.each do |op|
-          queue.unsubscribe channel: channel, op: op 
-        end
-      else
+      if ops.empty?
         queue.unsubscribe channel: channel
+      else
+        ops.each do |op|
+          queue.unsubscribe channel: channel, op: op
+        end
       end
     end
   end
