@@ -11,7 +11,7 @@ class ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
   end
 
   def validate_identifier!(identifier)
-    return if identifier =~ /\A([0-9a-zA-Z_]+)(\.([0-9a-zA-Z_]+))?\z/
+    return if identifier =~ /\A([0-9a-z_]+)(\.([0-9a-z_]+))?\z/
     raise "Invalid SQL identifier: #{identifier.inspect}"
   end
 
