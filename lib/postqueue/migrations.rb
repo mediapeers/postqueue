@@ -69,15 +69,9 @@ module Postqueue
             FOR subscription IN
               SELECT * FROM #{quoted_subscriptions_table_name} WHERE op = NEW.op
             LOOP
-              item = ROW(
-                nextval('#{fq_table_name}_id_seq'),   -- id
-                NEW.op,                               -- op
-                subscription.channel,                 -- channel
-                NEW.entity_id,                        -- entity_id
-                NEW.created_at,                       -- created_at
-                NEW.next_run_at,                      -- next_run_at
-                0                                     -- failed_attempts
-              );
+              item = NEW;
+              item.id = nextval('#{fq_table_name}_id_seq');
+              item.channel = subscription.channel;
 
               INSERT INTO #{quoted_table_name} VALUES (item.*);
             END LOOP;
