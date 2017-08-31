@@ -29,8 +29,6 @@ module Postqueue
     end
 
     def self.item_class(table_name:)
-      Item.connection.validate_identifier! table_name
-
       klass_name = "Item#{table_name.tr('.', '_').camelize}"
       return const_get(klass_name) if const_defined?(klass_name)
 
@@ -42,6 +40,7 @@ module Postqueue
     end
 
     def initialize(table_name:)
+      Postqueue.validate_identifier!(table_name)
       @item_class = ::Postqueue::Queue.item_class(table_name: table_name)
 
       @max_attemps = 5

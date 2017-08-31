@@ -6,6 +6,8 @@ module Postqueue
       extend self
 
       def migrate!(table_name)
+        validate_identifier!(table_name)
+
         create_schema! table_name
         create_postqueue_table! table_name
         change_postqueue_entity_id_type! table_name
@@ -15,6 +17,8 @@ module Postqueue
       end
 
       def unmigrate!(table_name)
+        validate_identifier!(table_name)
+
         connection.execute <<-SQL
           DROP TABLE IF EXISTS #{table_name};
           DROP TABLE IF EXISTS #{table_name}_subscriptions;

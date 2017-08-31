@@ -41,6 +41,11 @@ module Postqueue
     def unmigrate!(table_name: DEFAULT_TABLE_NAME)
       ::Postqueue::Item::Migrations.unmigrate!(table_name)
     end
+
+    def validate_identifier!(identifier)
+      return if identifier =~ /\A([0-9a-z_]+)(\.([0-9a-z_]+))?\z/
+      raise "Invalid SQL identifier: #{identifier.inspect}"
+    end
   end
 end
 

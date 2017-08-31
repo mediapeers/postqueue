@@ -10,11 +10,6 @@ class ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
     row.is_a?(Array) ? row.first : row
   end
 
-  def validate_identifier!(identifier)
-    return if identifier =~ /\A([0-9a-z_]+)(\.([0-9a-z_]+))?\z/
-    raise "Invalid SQL identifier: #{identifier.inspect}"
-  end
-
   def column_type(table_name:, column:)
     schema, table_name = parse_fq_name(table_name)
     schema = "public" if schema.nil?
@@ -33,6 +28,18 @@ class ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
 
   def has_table?(table_name:)
     has_column?(table_name: table_name, column: "id")
+  end
+
+  def primary_key_columns(table_name:)
+    result = execute <<-SQL
+      SELECT pg_attribute.attname AS name,
+        format_type(pg_attribute.atttypid, pg_attribute.atttypmod) AS type
+        FROM   pg_index
+        JOIN   pg_attribute ON pg_attribute.attrelid = pg_index.indrelid AND pg_attribute.attnum = ANY(pg_index.indkey)
+        WHERE  pg_index.indrelid = '#{table_name}'::regclass AND pg_index.indisprimary;
+    SQL
+
+    result.each_row.map { |row| { name: row[0], type: row[1] }}
   end
 
   def parse_fq_name(fq_table_name)
