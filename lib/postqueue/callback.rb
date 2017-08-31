@@ -15,8 +15,16 @@ module Postqueue
         @idempotent
       end
 
-      def call(op, entity_ids)
-        @block.call op, entity_ids if @block
+      def call(op, entity_ids, items)
+        return unless @block
+
+        if @block.arity >= 3 || @block.arity <= -3
+          attributes = items.map(&:attributes)
+          attributes = attributes.map(&:symbolize_keys)
+          @block.call op, entity_ids, attributes
+        else
+          @block.call op, entity_ids
+        end
       end
     end
 
@@ -31,11 +39,11 @@ module Postqueue
       self
     end
 
-    def run_callback(op:, entity_ids:)
+    def run_callback(op:, entity_ids:, items:)
       c = callback(op: op)
       c ||= callback(op: :missing_handler)
       if c
-        c.call(op, entity_ids)
+        c.call(op, entity_ids, items)
       else
         raise MissingHandler, op: op, entity_ids: entity_ids
       end

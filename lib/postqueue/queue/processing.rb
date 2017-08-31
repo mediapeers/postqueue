@@ -35,7 +35,7 @@ module Postqueue
 
       timing = queueing_time(channel: channel, op: op, entity_ids: entity_ids)
       timing.processing = Benchmark.realtime do
-        Postqueue.run_callback(op: op, entity_ids: entity_ids)
+        Postqueue.run_callback(op: op, entity_ids: entity_ids, items: items)
         item_class.where(id: item_ids).delete_all
       end
 

@@ -1,9 +1,8 @@
 module Postqueue
   class Queue
     # returns a list of items that are ready to process
-    def upcoming(relation = nil, select_columns: nil) #:nodoc:
+    def upcoming(relation = nil) #:nodoc:
       relation = item_class.all if relation.nil?
-      relation = relation.select(*select_columns) if select_columns
 
       # Ordering by next_run_at and id should not strictly be necessary, but helps
       # processing entries in the passed in order when enqueued at the same time.
@@ -14,7 +13,7 @@ module Postqueue
     # Select and lock up to \a limit unlocked items in the queue. Used by
     # select_and_lock_batch.
     def select_and_lock(relation, limit:)
-      relation = upcoming(relation, select_columns: [ :id, :entity_id, :op ])
+      relation = upcoming(relation)
       skip_locked relation, limit: limit
     end
 
