@@ -20,7 +20,7 @@ describe "Process::Queue error handling" do
     end
 
     it "keeps the item in the queue and increments the failed_attempt count" do
-      queue.process_one
+      queue.process(1)
 
       expect(queue.items.count).to eq(1)
       expect(queue.items.first.attributes).to include("entity_id" => 12, "failed_attempts" => 1)
@@ -28,7 +28,7 @@ describe "Process::Queue error handling" do
 
     it "logs the exception" do
       expect(Postqueue).to receive(:log_exception) { |e, _, _| expect(e).to be_a(E) }
-      queue.process_one
+      queue.process(1)
     end
   end
 
@@ -38,7 +38,7 @@ describe "Process::Queue error handling" do
     end
 
     it "keeps the item in the queue and increments the failed_attempt count" do
-      queue.process_one
+      queue.process(1)
 
       expect(queue.items.count).to eq(1)
       expect(queue.items.first.attributes).to include("entity_id" => 12, "failed_attempts" => 1)
@@ -46,7 +46,7 @@ describe "Process::Queue error handling" do
 
     it "logs the exception" do
       expect(Postqueue).to receive(:log_exception) { |e, _, _| expect(e).to be_a(Postqueue::MissingHandler) }
-      queue.process_one
+      queue.process(1)
     end
   end
 
@@ -57,11 +57,11 @@ describe "Process::Queue error handling" do
     end
 
     it "does not raise an error and returns 0" do
-      expect(queue.process_one).to eq(0)
+      expect(queue.process(1)).to eq(0)
     end
 
     it "does not run the block" do
-      queue.process_one
+      queue.process(1)
       expect(called_block).not_to be_truthy
     end
 

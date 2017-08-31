@@ -27,8 +27,8 @@ module Postqueue
     end
 
     # process \a batch_size entries from \a table_name
-    def process!(table_name: DEFAULT_TABLE_NAME, channel: nil, batch_size: nil)
-      new(table_name: table_name).process(channel: channel, batch_size: batch_size)
+    def process!(batch_size = nil, table_name: DEFAULT_TABLE_NAME, channel: nil)
+      new(table_name: table_name).process(batch_size, channel: channel)
     end
 
     # Create or update a database table \a table_name

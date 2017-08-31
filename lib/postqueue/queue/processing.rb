@@ -3,8 +3,7 @@ module Postqueue
   class Queue
     # Processes up to batch_size entries
     #
-    # process batch_size: 100
-    def process(channel: nil, batch_size: 100)
+    def process(batch_size = 100, channel: nil)
       item_class.transaction do
         # fetch one or more entries from the postqueue table. This will only
         # return items with the same "op" value.
@@ -18,15 +17,10 @@ module Postqueue
       end
     end
 
-    # processes a single entry
-    def process_one(channel: nil)
-      process(channel: channel, batch_size: 1)
-    end
-
     def process_until_empty(channel: nil, batch_size: 100)
       count = 0
       loop do
-        processed_items = process(channel: channel, batch_size: batch_size)
+        processed_items = process(batch_size, channel: channel)
         break if processed_items == 0
         count += processed_items
       end
