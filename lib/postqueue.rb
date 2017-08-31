@@ -9,7 +9,7 @@ require_relative "postqueue/callback"
 require_relative "postqueue/availability"
 
 module Postqueue
-  DEFAULT_TABLE_NAME = "postqueue"
+  DEFAULT_TABLE_NAME = ENV["POSTQUEUE_TABLE_NAME"] || "postqueue"
 
   class << self
     def new(table_name: nil)

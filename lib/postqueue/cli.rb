@@ -8,7 +8,7 @@ module Postqueue::CLI
     Postqueue.migrate! table_name: table
   end
 
-  def subscriptions(table: "postqueue")
+  def subscriptions(table: Postqueue::DEFAULT_TABLE_NAME)
     require "table_print"
 
     connect_to_database!
@@ -16,7 +16,7 @@ module Postqueue::CLI
     tp queue.subscriptions
   end
 
-  def subscribe(channel, *ops, table: "postqueue")
+  def subscribe(channel, *ops, table: Postqueue::DEFAULT_TABLE_NAME)
     connect_to_database!
     queue = Postqueue.new table_name: table
 
@@ -42,19 +42,19 @@ module Postqueue::CLI
     end
   end
 
-  def enqueue(op, entity_id, *entity_ids, table: "postqueue", channel: nil)
+  def enqueue(op, entity_id, *entity_ids, table: Postqueue::DEFAULT_TABLE_NAME, channel: nil)
     connect_to_database!
     queue = Postqueue.new table_name: table
     count = queue.enqueue op: op, entity_id: [ entity_id ] + entity_ids, channel: channel
     Postqueue.logger.info "Enqueued #{count} queue items"
   end
 
-  def run(*channels, table: "postqueue")
+  def run(*channels, table: Postqueue::DEFAULT_TABLE_NAME)
     connect_to_app!
     Postqueue.run! table_name: table, channel: (channels.empty? ? nil : channels)
   end
 
-  def stats(table: "postqueue")
+  def stats(table: Postqueue::DEFAULT_TABLE_NAME)
     connect_to_database!
     connection = ActiveRecord::Base.connection
     connection.validate_identifier!(table)
