@@ -8,6 +8,7 @@ module Postqueue
       def migrate!(table_name)
         create_schema! table_name
         create_postqueue_table! table_name
+        change_postqueue_entity_id_type! table_name
         create_subscriptions_table! table_name
         change_postqueue_id_type! table_name
         add_postqueue_queue_column! table_name

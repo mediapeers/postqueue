@@ -96,6 +96,15 @@ module Postqueue
       SQL
     end
 
+    def change_postqueue_entity_id_type!(fq_table_name)
+      return if connection.column_type(table_name: fq_table_name, column: "entity_id") == "bigint"
+
+      Postqueue.logger.info "[#{fq_table_name}] Changing type of entity_id column to BIGINT"
+      connection.execute <<-SQL
+        ALTER TABLE #{fq_table_name} ALTER COLUMN entity_id TYPE BIGINT;
+      SQL
+    end
+
     def add_postqueue_queue_column!(fq_table_name)
       Postqueue.logger.info "[#{fq_table_name}] Adding channel column"
       connection.execute <<-SQL
