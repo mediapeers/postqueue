@@ -3,9 +3,43 @@
 Dir.glob(__FILE__.sub(/\.rb$/, "/**/*.rb")).sort.each { |file| load file }
 
 module Postqueue::CLI
-  def migrate(_policy = nil, table:)
+  def migrate(table:)
     connect_to_database!
     Postqueue.migrate! table_name: table
+  end
+
+  def subscriptions(table: "postqueue")
+    require "table_print"
+
+    connect_to_database!
+    queue = Postqueue.new table_name: table
+    tp queue.subscriptions
+  end
+
+  def subscribe(channel, *ops, table: "postqueue")
+    connect_to_database!
+    queue = Postqueue.new table_name: table
+
+    ActiveRecord::Base.transaction do
+      ops.each do |op|
+        queue.subscribe channel: channel, op: op 
+      end
+    end
+  end
+
+  def unsubscribe(channel, *ops)
+    connect_to_database!
+    queue = Postqueue.new table_name: table
+
+    ActiveRecord::Base.transaction do
+      if ops.length > 0
+        ops.each do |op|
+          queue.unsubscribe channel: channel, op: op 
+        end
+      else
+        queue.unsubscribe channel: channel
+      end
+    end
   end
 
   def enqueue(op, entity_id, *entity_ids, table: "postqueue", channel: nil)

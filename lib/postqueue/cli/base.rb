@@ -43,6 +43,15 @@ module Postqueue::CLI
     command = command.tr(":", "_")
     help! unless commands.include?(command)
 
+    method = public_instance_method(command)
+    if method.arity > 0 && args.count != method.arity
+      STDERR.puts "Invalid number of arguments for '#{command}', expect #{method.arity}"
+      help! command
+    elsif method.arity < 0 && args.count < -method.arity - 1
+      STDERR.puts "Invalid number of arguments for '#{command}', expect at least #{-method.arity - 1}"
+      help! command
+    end
+
     if keyword_parameters?(command)
       options = extract_options!(args)
       args << options
@@ -63,11 +72,12 @@ module Postqueue::CLI
     public_instance_methods(false).map(&:to_s).grep(/\A[a-z_]*\z/).sort
   end
 
-  def help!
+  def help!(specific_command = nil)
     command_name = File.basename($0)
 
     STDERR.puts "Usage:\n\n"
     commands.each do |subcommand|
+      next if specific_command && subcommand != specific_command
       parameters = method(subcommand).parameters
       args = []
       opts = []
