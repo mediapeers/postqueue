@@ -45,7 +45,7 @@ module Postqueue
         item_class.where(id: item_ids).delete_all
       end
 
-      log_processing(op: op, entity_ids: entity_ids, timing: timing)
+      Postqueue.log_processing(op: op, entity_ids: entity_ids, timing: timing)
 
       # even though we try not to enqueue duplicates we cannot guarantee that,
       # since concurrent enqueue transactions might still insert duplicates.
@@ -58,7 +58,6 @@ module Postqueue
       item_class.postpone item_ids
       Postqueue.log_exception(e, op, entity_ids)
       @on_exception.call(e, op, entity_ids) if @on_exception
-      e.send :raise
     end
 
     class Timing
@@ -81,15 +80,6 @@ module Postqueue
 
       queue_time = queue_times.first
       Timing.new(avg: queue_time.avg, max: queue_time.max)
-    end
-
-    # called after processing: this logs the processing results.
-    def log_processing(op:, entity_ids:, timing:)
-      msg = "processing '#{op}' for id(s) #{entity_ids.join(',')}: "
-      msg += "processing #{entity_ids.length} items took #{'%.3f secs' % timing.processing}"
-      msg += ", queue_time: #{'%.3f secs (avg)' % timing.avg}/#{'%.3f secs (max)' % timing.max}"
-
-      Postqueue.logger.info msg
     end
   end
 end

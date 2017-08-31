@@ -20,10 +20,6 @@ module Postqueue
       @on_exception = block
       self
     end
-
-    def log_exception(exception, op, entity_ids)
-      Postqueue.logger.warn "processing '#{op}' for id(s) #{entity_ids.inspect}: caught #{exception}"
-    end
   end
 
   extend ExceptionHandling

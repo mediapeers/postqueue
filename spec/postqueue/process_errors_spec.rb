@@ -20,17 +20,15 @@ describe "Process::Queue error handling" do
     end
 
     it "keeps the item in the queue and increments the failed_attempt count" do
-      begin
-        queue.process_one
-      rescue
-      end
+      queue.process_one
 
       expect(queue.items.count).to eq(1)
       expect(queue.items.first.attributes).to include("entity_id" => 12, "failed_attempts" => 1)
     end
 
-    it "reraises the exception" do
-      expect { queue.process_one }.to raise_error(E)
+    it "logs the exception" do
+      expect(Postqueue).to receive(:log_exception) { |e, _, _| expect(e).to be_a(E) }
+      queue.process_one
     end
   end
 
@@ -39,18 +37,16 @@ describe "Process::Queue error handling" do
       queue.enqueue op: "unknown", entity_id: 12
     end
 
-    it "raises a MissingHandler exception" do
-      expect { queue.process_one }.to raise_error(::Postqueue::MissingHandler)
-    end
-
     it "keeps the item in the queue and increments the failed_attempt count" do
-      begin
-        queue.process_one
-      rescue
-      end
+      queue.process_one
 
       expect(queue.items.count).to eq(1)
       expect(queue.items.first.attributes).to include("entity_id" => 12, "failed_attempts" => 1)
+    end
+
+    it "logs the exception" do
+      expect(Postqueue).to receive(:log_exception) { |e, _, _| expect(e).to be_a(Postqueue::MissingHandler) }
+      queue.process_one
     end
   end
 
