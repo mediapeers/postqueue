@@ -81,25 +81,35 @@ module Postqueue::CLI
     STDERR.puts "Usage:\n\n"
     commands.each do |subcommand|
       next if specific_command && subcommand != specific_command
-      parameters = method(subcommand).parameters
-      args = []
-      opts = []
-
-      parameters.each do |mode, name|
-        case mode
-        when :req then args << name
-        when :opt then args << "[ #{name.to_s.upcase} ]"
-        when :key then opts << "--#{name}"
-        when :keyreq then opts << "--#{name}"
-        end
+      parameters = method(subcommand).parameters.each_with_object({}) do |(mode, name), hsh|
+        hsh[mode] ||= []
+        hsh[mode] << name
       end
 
-      msg = "#{command_name} #{subcommand.tr('_', ':')} #{args.join(" ")}"
-      if opts.empty?
-        STDERR.puts "    #{"%-30s" % msg}"
-      else
-        STDERR.puts "    #{"%-30s" % msg}      (#{opts.join(", ")})"
-      end
+      parameters.default = []
+
+      # req     #required argument
+      # opt     #optional argument
+      # rest    #rest of arguments as array
+      # keyreq  #reguired key argument (2.1+)
+      # key     #key argument
+      # keyrest #rest of key arguments as Hash
+      # block   #block parameter
+
+      req     = parameters[:req].map { |name| "<#{name}>" }.join(" ")
+      opt     = parameters[:opt].map { |name| "[ <#{name}> ]" }.join(" ")
+      rest    = parameters[:rest].map { |name| "[ <#{name.to_s.singularize}> .. ]" }.join(" ")
+      keyreq  = parameters[:keyreq].map { |name| "--#{name}=<#{name}>" }.join(" ")
+      key     = parameters[:key].map { |name| "--#{name}=<#{name}>" }.join(" ")
+
+      msg = "    #{command_name} #{subcommand.tr('_', ':')}"
+      msg += " #{keyreq}" unless keyreq.empty?
+      msg += " [ #{key} ]" unless key.empty?
+      msg += " #{req}" unless req.empty?
+      msg += " #{opt}" unless opt.empty?
+      msg += " #{rest}" unless rest.empty?
+
+      STDERR.puts msg
     end
     STDERR.puts "\n"
     exit 1
