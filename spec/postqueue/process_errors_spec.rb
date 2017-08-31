@@ -1,59 +1,72 @@
 require "spec_helper"
 
-describe "error handling" do
+describe "Process::Queue error handling" do
   class E < RuntimeError; end
 
   attr_reader :queue
+  attr_reader :called_block
 
   before do
-    Postqueue.on "mytype" do
+    Postqueue.on "failing" do
+      @called_block = true
       raise E
     end
+    @queue = Postqueue.new
   end
 
   context "when handler raises an exception" do
     before do
-      @queue = Postqueue.new
-      @queue.enqueue op: "mytype", entity_id: 12
+      queue.enqueue op: "failing", entity_id: 12
     end
 
-    it "reraises the exception, keeps the item in the queue and increments the failed_attempt count" do
-      expect { queue.process_one }.to raise_error(E)
+    it "keeps the item in the queue and increments the failed_attempt count" do
+      begin
+        queue.process_one
+      rescue
+      end
 
-      expect(queue.items.pluck(:entity_id)).to contain_exactly(12)
-      expect(queue.items.pluck(:failed_attempts)).to contain_exactly(1)
+      expect(queue.items.count).to eq(1)
+      expect(queue.items.first.attributes).to include("entity_id" => 12, "failed_attempts" => 1)
+    end
+
+    it "reraises the exception" do
+      expect { queue.process_one }.to raise_error(E)
     end
   end
 
   context "when no handler can be found" do
     before do
-      @queue = Postqueue.new
-      @queue.enqueue op: "unknown", entity_id: 12
+      queue.enqueue op: "unknown", entity_id: 12
     end
 
     it "raises a MissingHandler exception" do
       expect { queue.process_one }.to raise_error(::Postqueue::MissingHandler)
     end
+
+    it "keeps the item in the queue and increments the failed_attempt count" do
+      begin
+        queue.process_one
+      rescue
+      end
+
+      expect(queue.items.count).to eq(1)
+      expect(queue.items.first.attributes).to include("entity_id" => 12, "failed_attempts" => 1)
+    end
   end
 
-  context "failed_attempts reached MAX_ATTEMPTS" do
+  describe "when failed_attempts reaches max_attemps" do
     before do
-      @queue = Postqueue.new
-
-      @queue.enqueue op: "mytype", entity_id: 12
+      queue.enqueue op: "failing", entity_id: 12
       @queue.items.update_all(failed_attempts: queue.max_attemps)
     end
 
-    it "verifies that the queue is configured with max_attemps >= 3" do
-      expect(queue.max_attemps).to be >= 3
-    end
-
-    it "does not call the block" do
-      expect { queue.process_one }.not_to raise_error
-    end
-
-    it "returns 0" do
+    it "does not raise an error and returns 0" do
       expect(queue.process_one).to eq(0)
+    end
+
+    it "does not run the block" do
+      queue.process_one
+      expect(called_block).not_to be_truthy
     end
 
     it "does not remove the item" do

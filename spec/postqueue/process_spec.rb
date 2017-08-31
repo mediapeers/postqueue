@@ -1,6 +1,7 @@
 require "spec_helper"
 
-describe "processing" do
+describe "Process::Queue processing" do
+  let(:now) { Time.now }
   let(:processed_events) do
     @processed_events ||= []
   end
@@ -14,17 +15,28 @@ describe "processing" do
     Postqueue.new
   end
 
-  describe "basics" do
+  describe "process_one" do
     before do
       queue.enqueue op: "myop", entity_id: 12
       queue.enqueue op: "myop", entity_id: 13
       queue.enqueue op: "myop", entity_id: 14
+
+      queue.items.update_all(next_run_at: now)
+      queue.items.where(entity_id: 13).update_all(next_run_at: (now - 1.day))
+
+      @result = queue.process_one
     end
 
-    it "processes the first entry" do
-      r = queue.process_one
-      expect(r).to eq(1)
-      expect(queue.items.pluck(:entity_id)).to contain_exactly(13, 14)
+    it "returns the number of processed items" do
+      expect(@result).to eq(1)
+    end
+
+    it "processed the entry with the lowest next_run_at time" do
+      expect(processed_events).to eq([["myop", [13]]])
+    end
+
+    it "removes the processed entry" do
+      expect(queue.items.pluck(:entity_id)).to contain_exactly(12, 14)
     end
   end
 
