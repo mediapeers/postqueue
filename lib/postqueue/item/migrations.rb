@@ -15,8 +15,8 @@ module Postqueue
 
       def unmigrate!(table_name)
         connection.execute <<-SQL
-          DROP TABLE IF EXISTS #{connection.quote_fq_identifier table_name};
-          DROP TABLE IF EXISTS #{connection.quote_fq_identifier "#{table_name}_subscriptions"};
+          DROP TABLE IF EXISTS #{table_name};
+          DROP TABLE IF EXISTS #{table_name}_subscriptions;
         SQL
       end
     end

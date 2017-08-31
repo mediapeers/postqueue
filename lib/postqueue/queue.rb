@@ -29,6 +29,8 @@ module Postqueue
     end
 
     def self.item_class(table_name:)
+      Item.connection.validate_identifier! table_name
+
       klass_name = "Item#{table_name.tr('.', '_').camelize}"
       return const_get(klass_name) if const_defined?(klass_name)
 

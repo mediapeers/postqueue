@@ -21,8 +21,7 @@ module Postqueue
         @insert_sql ||= begin
           columns = postqueue_attribute_names
           placeholders = 1.upto(columns.count).map { |i| "$#{i}" }
-          quoted_table_name = connection.quote_fq_identifier table_name
-          "INSERT INTO #{quoted_table_name}(#{columns.join(", ")}) VALUES(#{placeholders.join(", ")})"
+          "INSERT INTO #{table_name}(#{columns.join(", ")}) VALUES(#{placeholders.join(", ")})"
         end
       end
     end

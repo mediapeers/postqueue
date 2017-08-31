@@ -4,27 +4,27 @@ require "active_record"
 require "active_record/connection_adapters/postgresql_adapter"
 
 class ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
-  def quote_identifier(identifier)
-    identifier = identifier.split(".").last
-    quote_table_name identifier
+  def ask(sql)
+    result = execute sql
+    row = result.each_row.first
+    row.is_a?(Array) ? row.first : row
   end
 
-  def quote_fq_identifier(identifier)
-    quote_table_name identifier
+  def validate_identifier!(identifier)
+    return if identifier =~ /\A([0-9a-zA-Z_]+)(\.([0-9a-zA-Z_]+))?\z/
+    raise "Invalid SQL identifier: #{identifier.inspect}"
   end
 
   def column_type(table_name:, column:)
     schema, table_name = parse_fq_name(table_name)
     schema = "public" if schema.nil?
 
-    result = exec_query <<-SQL
-      SELECT data_type FROM information_schema.columns
+    ask <<-SQL
+      SELECT data_type, table_schema FROM information_schema.columns
       WHERE table_name = #{quote(table_name)}
-        AND table_schema = #{quote(schema || 'public')}
+        AND table_schema = #{quote(schema)}
         AND column_name = #{quote(column)}
     SQL
-
-    result.rows.first&.first
   end
 
   def has_column?(table_name:, column:)

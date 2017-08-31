@@ -57,6 +57,7 @@ module Postqueue::CLI
   def stats(table: "postqueue")
     connect_to_database!
     connection = ActiveRecord::Base.connection
+    connection.validate_identifier!(table)
 
     require "table_print"
     sql = <<-SQL
@@ -72,7 +73,7 @@ module Postqueue::CLI
       MIN(now() - created_at) AS min_age,
       MAX(now() - created_at) AS max_age,
       AVG(now() - created_at) AS avg_age
-    FROM #{connection.quote_fq_identifier table}
+    FROM #{table}
     GROUP BY op, failed_attempts, status
     SQL
 
