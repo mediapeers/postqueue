@@ -1,6 +1,6 @@
 module Postqueue
   class Item < ActiveRecord::Base
-    module Policy
+    module Enqueue
       # Enqueues an queue item.
       #
       # Parameters:
@@ -26,15 +26,6 @@ module Postqueue
         end
 
         entity_ids.count
-      end
-
-      def postpone(ids)
-        connection.exec_query <<-SQL
-          UPDATE #{quoted_table_name}
-            SET failed_attempts = failed_attempts+1,
-                next_run_at = next_run_at + power(failed_attempts + 1, 1.5) * interval '10 second'
-            WHERE id IN (#{ids.join(',')})
-        SQL
       end
     end
   end

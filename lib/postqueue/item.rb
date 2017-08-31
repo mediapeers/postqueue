@@ -1,6 +1,7 @@
 require "active_record"
 require_relative "item/inserter"
-require_relative "item/policy"
+require_relative "item/enqueue"
+require_relative "item/processing"
 require_relative "item/migrations"
 
 module Postqueue
@@ -22,6 +23,7 @@ module Postqueue
     end
 
     extend Inserter
-    extend Policy
+    extend Processing
+    extend Enqueue
   end
 end
