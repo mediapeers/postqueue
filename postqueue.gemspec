@@ -28,5 +28,6 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "timecop", "~> 0"
   gem.add_development_dependency "rubocop", "~> 0"
   gem.add_dependency "pg"
+  gem.add_dependency "simple-sql", "~> 0.2.6"
   gem.add_dependency "table_print"
 end
