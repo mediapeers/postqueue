@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mediapeers/postqueue.svg?branch=master)](https://travis-ci.org/mediapeers/postqueue)
+
 # Postqueue
 
 The `postqueue` gem implements a simple to use queue on top of postgresql.
