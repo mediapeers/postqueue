@@ -1,9 +1,10 @@
 AllCops:
   TargetRubyVersion: 2.3
   Exclude:
-    - 'db/schema.rb'
-    - 'db/migrate/20160613165812_devise_create_users.rb'
-    - 'bin/*'
+    - db/schema.rb
+    - db/migrate/20160613165812_devise_create_users.rb
+    - bin/*
+    - vendor/**/*
 
 # "Favor format over String#%."
 Style/FormatString:
