@@ -9,8 +9,8 @@ addons:
 before_script:
   - psql --version
   - bundle install
-  - scroipts/prepare_pg
+  - scripts/prepare_pg
 
 script:
-  - bin/rspec
-  - bin/rubocop
+  - bundle exec rspec
+  - bundle exec rubocop
