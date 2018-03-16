@@ -6,7 +6,7 @@ describe "wildcard processing" do
   let(:queue) do
     Postqueue.new do |queue|
       queue.on "*" do |op, entity_ids|
-        callback_invocations << [ op, entity_ids ]
+        callback_invocations << [op, entity_ids]
       end
     end
   end

@@ -49,7 +49,7 @@ describe "idempotent operations" do
       queue.item_class.insert_item(op: "idempotent", entity_id: 12)
 
       queue.on "idempotent" do |op, entity_ids|
-        callback_invocations << [ op, entity_ids ]
+        callback_invocations << [op, entity_ids]
       end
       queue.process
     end

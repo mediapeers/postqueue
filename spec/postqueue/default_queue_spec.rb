@@ -12,7 +12,7 @@ describe "default_queue" do
     queue.on "other-batchable", batch_size: 10
 
     queue.on "*" do |op, entity_ids|
-      processed_events << [ op, entity_ids ]
+      processed_events << [op, entity_ids]
     end
 
     queue.enqueue op: "batchable", entity_id: 12

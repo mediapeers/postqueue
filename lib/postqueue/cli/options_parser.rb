@@ -37,15 +37,15 @@ module Postqueue
       end
 
       def usage
-        STDERR.puts <<-USAGE
-This is postqueue #{Postqueue::VERSION}. Usage examples:
+        STDERR.puts <<~USAGE
+          This is postqueue #{Postqueue::VERSION}. Usage examples:
 
-  postqueue [ stats ]
-  postqueue peek
-  postqueue enqueue op entity_id,entity_id,entity_id
-  postqueue run
-  postqueue help
-  postqueue process
+            postqueue [ stats ]
+            postqueue peek
+            postqueue enqueue op entity_id,entity_id,entity_id
+            postqueue run
+            postqueue help
+            postqueue process
 
 USAGE
       end
