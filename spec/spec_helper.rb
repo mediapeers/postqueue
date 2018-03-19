@@ -5,8 +5,10 @@ require "pry"
 require "simplecov"
 
 SimpleCov.start do
-  # TODO: increase test coverage!
-  minimum_coverage 50
+  minimum_coverage 94
+  add_filter '/vendor/'
+  add_filter '/gems/'
+  add_filter '/spec/'
 end
 
 require "postqueue"
