@@ -11,7 +11,7 @@ describe "processing" do
       queue.on "other-batchable", batch_size: 10
 
       queue.on "*" do |op, entity_ids|
-        processed_events << [ op, entity_ids ]
+        processed_events << [op, entity_ids]
       end
     end
   end

@@ -43,7 +43,7 @@ module Postqueue
       return [] unless match
 
       batch_size = calculate_batch_size(op: match.op, max_batch_size: max_batch_size)
-      return [ match ] if batch_size <= 1
+      return [match] if batch_size <= 1
 
       batch_relation = relation.where(op: match.op)
       select_and_lock(batch_relation, limit: batch_size)

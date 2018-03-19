@@ -11,7 +11,7 @@ module Postqueue
     # maximum number of processing attempts.
     attr_reader :max_attemps
 
-    VALID_PROCESSING_VALUES = [ :async, :sync, :verify ]
+    VALID_PROCESSING_VALUES = [:async, :sync, :verify]
 
     # sets or return the processing mode. This must be one of :async, :sync
     # or :verify

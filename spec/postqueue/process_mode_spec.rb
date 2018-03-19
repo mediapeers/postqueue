@@ -6,7 +6,7 @@ describe "process mode" do
   let(:queue) do
     Postqueue.new do |queue|
       queue.on "op" do |op, entity_ids|
-        callback_invocations << [ op, entity_ids ]
+        callback_invocations << [op, entity_ids]
       end
     end
   end
