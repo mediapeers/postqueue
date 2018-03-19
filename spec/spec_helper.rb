@@ -8,7 +8,6 @@ SimpleCov.start do
   minimum_coverage 94
   add_filter '/vendor/'
   add_filter '/gems/'
-  add_filter '/spec/'
 end
 
 require "postqueue"
