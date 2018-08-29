@@ -47,7 +47,7 @@ module Postqueue
             postqueue help
             postqueue process
 
-USAGE
+        USAGE
       end
 
       def usage!
