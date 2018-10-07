@@ -20,6 +20,7 @@ module Postqueue
       loop do
         processed_items = process(op: op, batch_size: batch_size)
         break if processed_items == 0
+
         count += processed_items
       end
       count

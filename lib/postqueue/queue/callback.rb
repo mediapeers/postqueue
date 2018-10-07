@@ -27,11 +27,13 @@ module Postqueue
 
       if batch_size
         raise ArgumentError, "Can't set per-op batchsize for op '*'" if op == "*"
+
         @batch_sizes[op] = batch_size
       end
 
       unless idempotent.nil?
         raise ArgumentError, "Can't idempotent for default op '*'" if op == "*"
+
         @idempotent_operations[op] = idempotent
       end
 

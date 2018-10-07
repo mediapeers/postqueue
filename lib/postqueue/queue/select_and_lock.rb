@@ -61,6 +61,7 @@ module Postqueue
       recommended_batch_size = batch_size(op: op)
       return 1 if recommended_batch_size < 2
       return recommended_batch_size unless max_batch_size
+
       max_batch_size < recommended_batch_size ? max_batch_size : recommended_batch_size
     end
   end
