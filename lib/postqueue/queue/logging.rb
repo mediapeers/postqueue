@@ -18,6 +18,8 @@ module Postqueue
       logger.warn "processing '#{op}' for id(s) #{entity_ids.inspect}: caught #{exception}"
     end
 
+    public
+
     def on_exception(&block)
       if block
         @on_exception = block
@@ -28,8 +30,6 @@ module Postqueue
 
       @on_exception
     end
-
-    public
 
     def logger
       Postqueue.logger

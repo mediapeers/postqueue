@@ -22,7 +22,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "pry-byebug"
   gem.add_development_dependency "rake", "~> 10.5.0"
   gem.add_development_dependency "rspec", "~> 3.5.0"
-  gem.add_development_dependency "simplecov", "~> 0.7.1"
+  gem.add_development_dependency "simplecov"
 
   gem.add_development_dependency "activerecord", "~> 4"
   gem.add_development_dependency "rubocop", "~> 0.49"

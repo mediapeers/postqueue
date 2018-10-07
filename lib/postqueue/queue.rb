@@ -21,6 +21,7 @@ module Postqueue
       unless VALID_PROCESSING_VALUES.include?(processing)
         raise ArgumentError, "Invalid processing value, must be one of #{VALID_PROCESSING_VALUES.inspect}"
       end
+
       @processing = processing
     end
 
