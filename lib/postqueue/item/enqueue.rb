@@ -5,43 +5,37 @@ module Postqueue
     # be added to the queue.
     #
     # Returns the number of items that have been enqueued.
+    #
+    # Note: this method uses Simple::SQL.insert to insert the records, since
+    # this takes ~100ys per record, where ActiveRecord would clock in ~600µs
+    # per record. If Simple::SQL ever introduces prepared statements this would
+    # reduce the database's processing time by another 50%.
     def enqueue(op:, entity_id:, ignore_duplicates: false)
       transaction do
-        r = _enqueue(op: op, entity_id: entity_id, ignore_duplicates: ignore_duplicates)
-        Postqueue::Notifications.notify! if r > 0
-        r
+        entity_ids = Array(entity_id)
+        entity_ids = remove_duplicates(op, entity_ids) if ignore_duplicates
+        entity_ids.each do |eid|
+          ::Simple::SQL.insert table_name, op: op, entity_id: eid
+        end
+
+        Postqueue::Notifications.notify! unless entity_ids.empty?
+
+        entity_ids.count
       end
     end
 
     private
 
-    def _enqueue(op:, entity_id:, ignore_duplicates: false)
-      if entity_id.is_a?(Enumerable)
-        return enqueue_many(op: op, entity_ids: entity_id, ignore_duplicates: ignore_duplicates)
-      end
+    def remove_duplicates(op, entity_ids)
+      return entity_ids if entity_ids.empty?
 
-      if ignore_duplicates && where(op: op, entity_id: entity_id).present?
-        return 0
-      end
+      entity_ids = entity_ids.uniq
 
-      # In contrast to ActiveRecord, which clocks in around 600µs per item,
-      # Simple::SQL's insert only takes 100µs per item. Using prepared
-      # statements would further reduce the runtime to 50µs
-      ::Simple::SQL.insert table_name, op: op, entity_id: entity_id
+      duplicated_ids = Simple::SQL.all <<~SQL, op, entity_ids
+        SELECT DISTINCT entity_id FROM #{table_name} WHERE op=$1 AND entity_id = ANY($2)
+      SQL
 
-      1
-    end
-
-    def enqueue_many(op:, entity_ids:, ignore_duplicates:) #:nodoc:
-      entity_ids = Array(entity_ids)
-      entity_ids.uniq! if ignore_duplicates
-
-      # [TODO] - optimization: remove duplicates with a single SQL query.
-      entity_ids.each do |entity_id|
-        _enqueue(op: op, entity_id: entity_id, ignore_duplicates: ignore_duplicates)
-      end
-
-      entity_ids.count
+      entity_ids - duplicated_ids
     end
   end
 
