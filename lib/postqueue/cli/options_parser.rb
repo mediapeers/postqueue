@@ -18,7 +18,7 @@ module Postqueue
         options = OpenStruct.new
         options.sub_command = argv.shift || "stats"
 
-        unless %w(stats peek enqueue run process).include?(options.sub_command)
+        unless %w(stats peek enqueue run process migrate).include?(options.sub_command)
           usage!
         end
 
@@ -46,6 +46,7 @@ module Postqueue
             postqueue run
             postqueue help
             postqueue process
+            postqueue migrate
 
         USAGE
       end

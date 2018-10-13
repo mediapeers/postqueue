@@ -23,6 +23,9 @@ module Postqueue
       when "process"
         connect_to_rails!
         Postqueue.process batch_size: 1
+      when "migrate"
+        connect_to_rails!
+        Postqueue.migrate!
       when "run"
         connect_to_rails!
         Postqueue.run!
@@ -33,7 +36,8 @@ module Postqueue
       if File.exist?("config/environment.rb")
         load "config/environment.rb"
       else
-        logger.warn "Trying to load postqueue configuration from config/postqueue.rb"
+        connect_to_database!
+        Postqueue.logger.warn "Trying to load postqueue configuration from config/postqueue.rb"
         load "config/postqueue.rb"
       end
     end

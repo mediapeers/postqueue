@@ -2,5 +2,12 @@
 
 cat << SQL | psql -U postgres
 CREATE ROLE postqueue PASSWORD 'postqueue' LOGIN;
-CREATE DATABASE postqueue_test WITH OWNER postqueue
+SQL
+
+cat << SQL | psql -U postgres
+CREATE DATABASE postqueue_test WITH OWNER postqueue;
+SQL
+
+cat << SQL | psql -U postgres
+CREATE DATABASE postqueue WITH OWNER postqueue
 SQL
