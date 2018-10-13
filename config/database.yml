@@ -1,0 +1,10 @@
+development:
+  adapter: "postgresql"
+  database: "postqueue"
+  username: "postqueue"
+  password: "postqueue"
+test:
+  adapter: "postgresql"
+  database: "postqueue_test"
+  username: "postqueue"
+  password: "postqueue"

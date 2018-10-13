@@ -7,6 +7,11 @@ require "simplecov"
 SimpleCov.start do
   minimum_coverage 94
   add_filter 'vendor/'
+  add_filter 'lib/postqueue/queue/runner.rb'
+  add_filter 'lib/postqueue/notifications.rb'
+  add_filter 'lib/postqueue/logger.rb'
+  add_filter 'lib/postqueue/version.rb'
+  add_filter 'lib/postqueue/migrations.rb'
 end
 
 require "postqueue"

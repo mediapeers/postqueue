@@ -1,5 +1,2 @@
-#!/bin/sh
-set -eu
-
-rake prerelease 
-rake release
+#!/bin/bash
+$0.rb "$@"

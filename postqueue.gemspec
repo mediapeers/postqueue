@@ -1,11 +1,9 @@
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
-require "postqueue/version"
-
 Gem::Specification.new do |gem|
   gem.name    = "postqueue"
-  gem.version = ::Postqueue::VERSION
+  gem.version = File.read("VERSION")
   gem.authors = %w(radiospiel)
   gem.email   = %w(radiospiel@open-lab.org)
 
@@ -27,7 +25,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "activerecord", "~> 4"
   gem.add_development_dependency "rubocop", "~> 0.49"
   gem.add_development_dependency "timecop", "~> 0.8"
-  gem.add_dependency "pg"
+  gem.add_dependency "pg", "~> 0", ">= 0.20"
   gem.add_dependency "simple-sql", "~> 0", ">= 0.3.3"
   gem.add_dependency "table_print"
 end

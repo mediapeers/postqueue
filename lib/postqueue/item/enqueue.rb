@@ -1,34 +1,45 @@
 module Postqueue
-  class Item
+  module Enqueue
     # Enqueues an queue item. If the operation is duplicate, and an entry with
     # the same combination of op and entity_id exists already, no new entry will
     # be added to the queue.
     #
     # Returns the number of items that have been enqueued.
-    def self.enqueue(op:, entity_id:, ignore_duplicates: false)
-      if entity_id.is_a?(Enumerable)
-        return enqueue_many(op: op, entity_ids: entity_id, ignore_duplicates: ignore_duplicates)
-      end
-
-      if ignore_duplicates && where(op: op, entity_id: entity_id).present?
-        return 0
-      end
-
-      insert_item op: op, entity_id: entity_id
-      1
-    end
-
-    def self.enqueue_many(op:, entity_ids:, ignore_duplicates:) #:nodoc:
-      entity_ids = Array(entity_ids)
-      entity_ids.uniq! if ignore_duplicates
-
+    #
+    # Note: this method uses Simple::SQL.insert to insert the records, since
+    # this takes ~100ys per record, where ActiveRecord would clock in ~600µs
+    # per record. If Simple::SQL ever introduces prepared statements this would
+    # reduce the database's processing time by another 50%.
+    def enqueue(op:, entity_id:, ignore_duplicates: false)
       transaction do
-        entity_ids.each do |entity_id|
-          enqueue(op: op, entity_id: entity_id, ignore_duplicates: ignore_duplicates)
+        entity_ids = Array(entity_id)
+        entity_ids = remove_duplicates(op, entity_ids) if ignore_duplicates
+        entity_ids.each do |eid|
+          ::Simple::SQL.insert table_name, op: op, entity_id: eid
         end
-      end
 
-      entity_ids.count
+        Postqueue::Notifications.notify! unless entity_ids.empty?
+
+        entity_ids.count
+      end
     end
+
+    private
+
+    def remove_duplicates(op, entity_ids)
+      return entity_ids if entity_ids.empty?
+
+      entity_ids = entity_ids.uniq
+
+      duplicated_ids = Simple::SQL.all <<~SQL, op, entity_ids
+        SELECT DISTINCT entity_id FROM #{table_name} WHERE op=$1 AND entity_id = ANY($2)
+      SQL
+
+      entity_ids - duplicated_ids
+    end
+  end
+
+  class Item
+    extend ::Postqueue::Enqueue
   end
 end
