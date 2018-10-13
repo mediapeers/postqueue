@@ -34,8 +34,11 @@ module Postqueue
       Item.reset_column_information
 
       # upgrade id column to use BIGINT if necessary
-      id_max = Item.attribute_types['id'].send(:range).end
-      if id_max <= 2147483648
+      id_type = nil
+      id_type ||= Item.attribute_types['id'] if Item.respond_to?(:attribute_types)
+      id_type ||= Item.column_types['id'] if Item.respond_to?(:column_types)
+      id_max = id_type.send(:range).end if id_type
+      if id_max && id_max <= 2147483648
         STDERR.puts "Changing type of #{table_name}.id column to BIGINT"
         connection.execute "ALTER TABLE #{table_name} ALTER COLUMN id TYPE BIGINT"
         connection.execute "ALTER SEQUENCE #{table_name}_id_seq RESTART WITH 2147483649"
