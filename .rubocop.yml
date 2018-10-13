@@ -74,3 +74,6 @@ Style/RescueStandardError:
   Exclude:
     - spec/postqueue/concurrency_spec.rb
     - lib/postqueue/queue/processing.rb
+
+Lint/MissingCopEnableDirective:
+  Enabled: false
