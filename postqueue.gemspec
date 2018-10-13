@@ -28,4 +28,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency "pg", "~> 0", ">= 0.20"
   gem.add_dependency "simple-sql", "~> 0", ">= 0.3.3"
   gem.add_dependency "table_print"
+  gem.add_development_dependency "fury"
 end
