@@ -63,5 +63,4 @@ module Postqueue
   end
 end
 
-require_relative "item/inserter"
 require_relative "item/enqueue"

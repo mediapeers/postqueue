@@ -46,7 +46,7 @@ describe "idempotent operations" do
 
     before do
       queue.enqueue op: "idempotent", entity_id: 12
-      queue.item_class.insert_item(op: "idempotent", entity_id: 12)
+      queue.enqueue op: "idempotent", entity_id: 12
 
       queue.on "idempotent" do |op, entity_ids|
         callback_invocations << [op, entity_ids]
