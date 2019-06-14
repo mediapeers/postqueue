@@ -1,6 +1,3 @@
-lib = File.expand_path('lib', __dir__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-
 Gem::Specification.new do |gem|
   gem.name    = "postqueue"
   gem.version = File.read("VERSION")
@@ -12,8 +9,11 @@ Gem::Specification.new do |gem|
   gem.homepage    = "https://github.com/mediapeers/postqueue"
   gem.license     = "MIT"
 
-  gem.files       = Dir["**/*"].select { |d| d =~ %r{^(README|data/|ext/|lib/|spec/|test/)} }
-  # gem.executables = [ "postqueue-worker" ]
+  gem.files = `git ls-files`.split($OUTPUT_RECORD_SEPARATOR).select do |file|
+    file.match(%r{^(lib/|VERSION|README)})
+  end
+  gem.require_paths = ['lib']
+  gem.bindir = 'bin'
   gem.executables = ["postqueue"]
 
   gem.add_development_dependency "pry", "~> 0.10"
@@ -23,7 +23,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "simplecov"
 
   gem.add_development_dependency "activerecord", "~> 4"
-  gem.add_development_dependency "rubocop", "~> 0.49"
+  gem.add_development_dependency "rubocop", "0.52.1"
   gem.add_development_dependency "timecop", "~> 0.8"
   gem.add_dependency "pg", "~> 0", ">= 0.20"
   gem.add_dependency "simple-sql", "~> 0", ">= 0.3.3"

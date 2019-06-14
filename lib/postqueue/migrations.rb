@@ -1,4 +1,3 @@
-# rubocop:disable Metrics/MethodLength
 
 module Postqueue
   module Migrations
@@ -10,6 +9,7 @@ module Postqueue
       SQL
     end
 
+    # rubocop:disable Metrics/MethodLength
     def migrate!
       connection.execute <<-SQL
         CREATE TABLE IF NOT EXISTS #{table_name} (
@@ -46,6 +46,7 @@ module Postqueue
 
       Item.reset_column_information
     end
+    # rubocop:enable Metrics/MethodLength
 
     private
 
