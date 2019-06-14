@@ -24,7 +24,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "simplecov"
 
   gem.add_development_dependency "activerecord", "~> 4"
-  gem.add_development_dependency "rubocop", "~> 0.49"
+  gem.add_development_dependency "rubocop", "0.52.1"
   gem.add_development_dependency "timecop", "~> 0.8"
   gem.add_dependency "pg", "~> 0", ">= 0.20"
   gem.add_dependency "simple-sql", "~> 0", ">= 0.3.3"
