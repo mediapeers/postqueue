@@ -1,5 +1,4 @@
 
-
 # Postqueue
 
 The `postqueue` gem implements a simple to use queue on top of postgresql.
