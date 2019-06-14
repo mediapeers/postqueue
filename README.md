@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/mediapeers/postqueue.svg?branch=master)](https://travis-ci.org/mediapeers/postqueue)
 
 # Postqueue
 
