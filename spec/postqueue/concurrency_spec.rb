@@ -16,6 +16,7 @@ describe "concurrency tests" do
   LOG_FILE = "log/test-runner.log"
 
   # Each runner writes the processed message into the LOG_FILE
+  # rubocop:disable Style/RescueStandardError
   def runner
     ActiveRecord::Base.connection_pool.with_connection do |_conn|
       log = File.open(LOG_FILE, "a")
@@ -30,6 +31,7 @@ describe "concurrency tests" do
   rescue => e
     STDERR.puts "runner aborts: #{e}, from #{e.backtrace.first}"
   end
+  # rubocop:enable Style/RescueStandardError
 
   def run_scenario(cnt, n_threads)
     FileUtils.rm_rf LOG_FILE

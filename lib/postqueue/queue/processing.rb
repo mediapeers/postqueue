@@ -29,6 +29,7 @@ module Postqueue
     private
 
     # The actual processing. Returns [ op, [ ids-of-processed-items ] ] or nil
+    # rubocop:disable Style/RescueStandardError
     def process_inside_transaction(op:, batch_size:)
       items = select_and_lock_batch(op: op, max_batch_size: batch_size)
       match = items.first
@@ -55,5 +56,6 @@ module Postqueue
       on_exception.call(e, match.op, entity_ids)
       0
     end
+    # rubocop:enable Style/RescueStandardError
   end
 end

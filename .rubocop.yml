@@ -3,11 +3,11 @@ AllCops:
     - bin/*
     - scripts/*
     - vendor/**/*
-    - tasks/prerelease.rake
 
 Metrics/BlockLength:
   Exclude:
     - spec/**/*
+    - postqueue.gemspec
 
 Style/Documentation:
   Enabled: false
@@ -65,15 +65,12 @@ Metrics/AbcSize:
 Metrics/CyclomaticComplexity:
   Max: 10
 
-# TODO: Enable later
+# TODO: enable later
 Style/StringLiterals:
   Enabled: false
 
 # TODO: Remove once code is fixed
 Style/RescueStandardError:
   Exclude:
-    - spec/postqueue/concurrency_spec.rb
-    - lib/postqueue/queue/processing.rb
-
-Lint/MissingCopEnableDirective:
-  Enabled: false
+#    - spec/postqueue/concurrency_spec.rb
+#    - lib/postqueue/queue/processing.rb
