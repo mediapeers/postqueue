@@ -1,6 +1,3 @@
-lib = File.expand_path('lib', __dir__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-
 Gem::Specification.new do |gem|
   gem.name    = "postqueue"
   gem.version = File.read("VERSION")
@@ -15,6 +12,8 @@ Gem::Specification.new do |gem|
   gem.files = `git ls-files`.split($OUTPUT_RECORD_SEPARATOR).select do |file|
     file.match(%r{^(lib/|VERSION|README)})
   end
+  gem.require_paths = ['lib']
+  gem.bindir = 'bin'
   gem.executables = ["postqueue"]
 
   gem.add_development_dependency "pry", "~> 0.10"
